@@ -32,11 +32,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Tree filters to matching entries only
 - `/` shortcut to jump to search, Esc to clear
 
-### Phase 2 — Component Registry & Navigation *(pending)*
-- KSComponentRegistry: all 31 entries with metadata
-- XjTree populated with categorized component list
-- Up/Down/Enter/Space navigation
-- currentLabel and statusBar update on selection change
+---
+
+## [0.3.0] — 2026-03-13
+
+### Added — Phase 2: Component Registry & Navigation
+- `KSComponentEntry.xojo_code`: data class with 6 public fields — Name, Category, ShortDesc,
+  LongDesc, Keywords, IsInteractive — plus a single constructor for registry use
+- `KSComponentRegistry.xojo_code`: module with idempotent `Init()` populating all 31 components
+  across 6 categories (Layout 4 · Widgets 6 · Prompts 9 · Style 4 · I/O 4 · Utility 4);
+  exposes `Categories()`, `EntriesForCategory()`, `EntryAt()`, `Count()`
+- `KSApp.xojo_code`: XjTree wired into component list panel with full Up/Down navigation;
+  parallel flat arrays `mFlatNodes / mFlatEntries` for O(1) cursor→entry lookup;
+  `PopulateTree()`, `SelectLine()`, `HandleListKey()` methods added;
+  status bar description updates live on every navigation step;
+  `mCurrentLabel` (XjText) in livePreview shows selected component name
+- `KitchenSink.xojo_project`: registered `KSComponentEntry` (Class) and
+  `KSComponentRegistry` (Module)
+
+### Fixed
+- **Syntax error**: `(New XjStyle).Method()` is not valid Xojo — intermediate objects must be
+  assigned to named variables before chaining; all three occurrences corrected
+- **Scroll cut-off**: visible height formula was `mTermHeight - 9`; corrected to
+  `mTermHeight - 11` (accounts for mRoot border + componentList border = 2 extra rows);
+  previously hid the last 2 items in the component list
 
 ---
 

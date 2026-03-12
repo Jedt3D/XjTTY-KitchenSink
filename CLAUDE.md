@@ -1,6 +1,6 @@
 # CLAUDE.md — XjTTY-KitchenSink Project Context
 
-> อัปเดตโดย @documentator · 2026-03-13
+> อัปเดตโดย @documentator · 2026-03-13 (Phase 2)
 
 ---
 
@@ -9,7 +9,7 @@
 **XjTTY-KitchenSink** is a fullscreen TUI console application (Xojo) that showcases all 31 components in the **XjTTY-Toolkit** library. It serves as an interactive browser, live-demo tool, and reference for developers learning the toolkit.
 
 - Library lives in: `XjTTYLib/` (59 `.xojo_code` files — do NOT modify)
-- App source files: `KSApp`, `KSComponentRegistry`, `KSPreviewBuilder`, `KSStatusBar`
+- App source files: `KSApp`, `KSComponentEntry`, `KSComponentRegistry`, `KSPreviewBuilder` (Phase 4)
 - Spec: `KITCHEN_SINK_PROPOSAL.md`
 
 ---
@@ -62,7 +62,7 @@ This project uses a **structured multi-role agent team**. Each phase follows the
 | Setup | Team infrastructure, docs, git | ✅ Done |
 | Scaffold | KSApp rename, XjTTYLib attached to project | ✅ Done |
 | Phase 1 | Skeleton (layout shell, event loop) | ✅ Done |
-| Phase 2 | Component Registry + Tree Navigation | ⬜ Pending |
+| Phase 2 | Component Registry + Tree Navigation | ✅ Done |
 | Phase 3 | Search + Autocomplete | ⬜ Pending |
 | Phase 4 | Static Previews (29 components) | ⬜ Pending |
 | Phase 5 | Interactive Previews (15 components) | ⬜ Pending |
@@ -72,15 +72,15 @@ This project uses a **structured multi-role agent team**. Each phase follows the
 
 ## Architecture Decisions
 
-### File Structure (5 source files)
+### File Structure (current source files)
 ```
-KitchenSink.xojo_project   — console app project file
-KSApp.xojo_code            — App class: event loop, layout tree, key routing (~400 lines)
-KSComponentRegistry.xojo_code — 31 component entries with metadata (~300 lines)
-KSPreviewBuilder.xojo_code — preview builders for all 31 components (~800 lines)
-KSStatusBar.xojo_code      — status bar renderer (~60 lines)
-XjTTYLib/                  — library (read-only)
+KitchenSink.xojo_project      — console app project file
+KSApp.xojo_code               — App class: event loop, layout tree, key routing, tree navigation
+KSComponentEntry.xojo_code    — Data class: 6 public fields per component (Name, Category, ShortDesc, LongDesc, Keywords, IsInteractive)
+KSComponentRegistry.xojo_code — Module: Init() + 31 entries; Categories(), EntriesForCategory(), EntryAt(), Count()
+XjTTYLib/                     — library (read-only, 59 files)
 ```
+**Planned (Phase 4+):** `KSPreviewBuilder.xojo_code`
 
 ### Layout Architecture
 4-panel fullscreen layout using `XjLayoutNode` / `XjBox`:
@@ -92,12 +92,14 @@ XjTTYLib/                  — library (read-only)
 Minimum terminal size: 80×24. Guard in resize handler.
 
 ### Key Design Patterns
-- **Preview swapping**: `mPreviewBox.RemoveAllChildren()` → `BuildPreview(entry)` → `mPreviewBox.AddChild(preview)`
-- **State in KSPreviewBuilder**: Interactive preview state (e.g., `mProgressValue`) lives as module-level properties
-- **Search**: `KSComponentRegistry.Search(query)` returns matching indices; tree filters to show only matches
-- **Focus cycle**: `XjFocusManager` chains: searchInput → listTree → previewArea
-- **Rendering**: ~30fps via `XjEventLoop(33)`. Full clear+paint each tick. Switch to DiffRender if needed.
-- **String building**: Use `parts() + String.FromArray(parts, "")` for concatenation in loops
+- **Parallel flat arrays**: `mFlatNodes() As XjTreeNode` and `mFlatEntries() As KSComponentEntry` mirror XjTree's internal flat list. `mFlatEntries(i)` is `Nil` for category header rows. O(1) cursor→entry lookup.
+- **Tree highlight**: Change `node.SetNodeStyle(...)` then call `mListTree.SetScrollOffset(mScrollOffset)` to mark XjTree dirty — no rebuild needed.
+- **Scroll visible height**: `mTermHeight - 11` (not `-9`). Breakdown: mRoot border(2) + header(3) + searchBar(3) + statusBar(1) + componentList border(2) = 11.
+- **Registry Init guard**: `KSComponentRegistry.mInitialized` prevents double-population. Call `Init()` freely; it no-ops after first call.
+- **Preview swapping** (Phase 4): `livePreview.RemoveAllChildren()` → `BuildPreview(entry)` → `livePreview.AddChild(preview)`
+- **Focus cycle** (Phase 5): `XjFocusManager` chains: searchInput → listTree → previewArea
+- **Rendering**: ~30fps via `XjEventLoop(33)`. Full clear+paint each tick.
+- **RemoveAll for arrays**: Use `.RemoveAll` to clear dynamic arrays (confirmed in XjTree source).
 
 ---
 
@@ -106,14 +108,15 @@ Minimum terminal size: 80×24. Guard in resize handler.
 - **Entry point class is `KSApp`** — Xojo boilerplate defaults to `App`; renamed to match `KS` prefix convention
 - **No modification to XjTTYLib** — it's a library dependency, not project code
 - **⚠️ IDE drops Module entries from .xojo_project** — When attaching a folder in Xojo IDE, `Class=` entries are preserved correctly but `Module=` entries either get path `../../../../../../..` or disappear entirely. Must be manually corrected in `KitchenSink.xojo_project` with paths like `XjTTYLib/XjANSI.xojo_code`. Affects: XjTerminal, XjScreen, XjANSI, XjLayoutSolver, XjColor, XjSymbols, XjCursor, XjFont, XjYAML, XjConversion, XjPlatform, XjCommand, XjMarkdown, XjUIParser, XjPrompt, XjWhich
+- **⚠️ `(New XjStyle).Method()` is a syntax error** — Xojo does not allow method calls on temporary `New` expressions. Always assign first: `Var s As New XjStyle` then `Var s2 As XjStyle = s.SetFG(...)`.
+- **⚠️ XjStyle chaining requires variables** — Each `Set*` returns a new XjStyle instance (immutable builder). Break chains into named variables: `Var withCyan As XjStyle = base.SetFG(...)` then `Var final As XjStyle = withCyan.SetBold()`.
 - **Delegate wiring** uses `AddressOf` — ensure method signatures match exactly
-- **XjTreeNode** children added before adding root to XjTree
-- **Prompt previews are MOCKUPS** — prompts conflict with the event loop; render as styled XjText
+- **XjTreeNode** children added before calling `mListTree.SetData(roots)` — tree rebuilds from root array
+- **XjTree has no built-in navigation** — `HandleKey` in XjTree always returns False for arrow keys. KSApp must handle UP/DOWN directly and call `SetScrollOffset` manually.
+- **Prompt previews are MOCKUPS** (Phase 4) — prompts conflict with the event loop; render as styled XjText
 - **`q` or Ctrl+C to quit** — both must be handled in key handler
 - **`XjTerminal.Width()` / `XjTerminal.Height()`** — checked on resize and initial render
-- **String performance**: Follow patterns from PERFORMANCE_EVAL.md in toolkit project
-- **`RemoveAll` vs loop** — prefer `RemoveAll` for clearing collections
-- **Xojo module properties** — KSPreviewBuilder uses module-level `Private` properties for interactive state
+- **Xojo module properties** — module-level `Private` properties act as module globals (used in KSComponentRegistry for mEntries/mInitialized)
 
 ---
 
