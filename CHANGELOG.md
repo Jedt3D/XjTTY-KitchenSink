@@ -40,6 +40,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.1.1] — 2026-03-13
+
+### Changed — Project Scaffold Finalized
+- Renamed `App.xojo_code` → `KSApp.xojo_code`; class `App` → `KSApp` to match `KS` prefix convention
+- Updated `KitchenSink.xojo_project` entry point reference from `App` to `KSApp`
+- All 59 `XjTTYLib/` components attached to project by user (referenced in `.xojo_project`)
+
+---
+
 ## [0.1.0] — 2026-03-13
 
 ### Added — Team Setup & Project Scaffold

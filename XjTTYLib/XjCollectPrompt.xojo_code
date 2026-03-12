@@ -1,12 +1,6 @@
 #tag Class
 Protected Class XjCollectPrompt
 	#tag Method, Flags = &h0
-		Sub Constructor()
-		  mResults = New Dictionary
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
 		Function AddAsk(key As String, question As String, defaultValue As String = "") As XjCollectPrompt
 		  mStepTypes.Add(TYPE_ASK)
 		  mStepKeys.Add(key)
@@ -45,13 +39,19 @@ Protected Class XjCollectPrompt
 		  mStepKeys.Add(key)
 		  mStepQuestions.Add(question)
 		  mStepDefaults.Add("")
-
+		  
 		  // Join choices with semicolon for storage
 		  Var joined As String = String.FromArray(choices, ";")
 		  mStepChoices.Add(joined)
-
+		  
 		  Return Self
 		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub Constructor()
+		  mResults = New Dictionary
+		End Sub
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
@@ -60,33 +60,33 @@ Protected Class XjCollectPrompt
 		    Var stepType As Integer = mStepTypes(i)
 		    Var stepKey As String = mStepKeys(i)
 		    Var stepQuestion As String = mStepQuestions(i)
-
+		    
 		    Select Case stepType
 		    Case TYPE_ASK
 		      Var p As New XjAskPrompt(stepQuestion, mStepDefaults(i))
 		      Var result As String = p.Run
 		      mResults.Value(stepKey) = result
-
+		      
 		    Case TYPE_CONFIRM
 		      Var p As New XjConfirmPrompt(stepQuestion)
 		      Var result As Boolean = p.Run
 		      mResults.Value(stepKey) = result
-
+		      
 		    Case TYPE_PASSWORD
 		      Var p As New XjPasswordPrompt(stepQuestion)
 		      Var result As String = p.Run
 		      mResults.Value(stepKey) = result
-
+		      
 		    Case TYPE_SELECT
 		      Var choiceStr As String = mStepChoices(i)
 		      Var choices() As String = choiceStr.Split(";")
 		      Var p As New XjSelectPrompt(stepQuestion, choices)
 		      Var result As String = p.Run
 		      mResults.Value(stepKey) = result
-
+		      
 		    End Select
 		  Next
-
+		  
 		  Return mResults
 		End Function
 	#tag EndMethod
@@ -94,10 +94,10 @@ Protected Class XjCollectPrompt
 
 	#tag Note, Name = "About"
 		XjCollectPrompt — Sequential Prompt Data Collector
-
+		
 		Part of XjTTY-Toolkit Phase 4 (Prompt System).
 		Builder for collecting structured data from sequential prompts.
-
+		
 		Usage:
 		  Var collect As New XjCollectPrompt
 		  Call collect.AddAsk("name", "What is your name?")
@@ -105,10 +105,10 @@ Protected Class XjCollectPrompt
 		  Call collect.AddConfirm("agree", "Do you agree?")
 		  Call collect.AddSelect("color", "Pick a color:", Array("Red", "Green", "Blue"))
 		  Var results As Dictionary = collect.Run
-
+		
 		  Var name As String = results.Value("name")
 		  Var agree As Boolean = results.Value("agree")
-
+		
 		Features:
 		- Builder pattern with AddAsk, AddConfirm, AddPassword, AddSelect
 		- Runs each prompt sequentially
@@ -116,8 +116,17 @@ Protected Class XjCollectPrompt
 		- Supports all 4 basic prompt types
 	#tag EndNote
 
+
 	#tag Property, Flags = &h21
-		Private mStepTypes() As Integer
+		Private mResults As Dictionary
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mStepChoices() As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mStepDefaults() As String
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
@@ -129,15 +138,7 @@ Protected Class XjCollectPrompt
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
-		Private mStepDefaults() As String
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mStepChoices() As String
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mResults As Dictionary
+		Private mStepTypes() As Integer
 	#tag EndProperty
 
 

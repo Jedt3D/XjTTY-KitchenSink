@@ -23,17 +23,18 @@ Protected Class XjCommandResult
 
 	#tag Note, Name = "About"
 		XjCommandResult — Shell Command Output
-
+		
 		Part of XjTTY-Toolkit (Polish phase).
 		Holds the result of an XjCommand.Run call.
 	#tag EndNote
 
-	#tag Property, Flags = &h0
-		Output As String
-	#tag EndProperty
 
 	#tag Property, Flags = &h0
 		ExitCode As Integer
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		Output As String
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -80,6 +81,30 @@ Protected Class XjCommandResult
 			Group="Position"
 			InitialValue="0"
 			Type="Integer"
+			EditorType=""
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="Output"
+			Visible=false
+			Group="Behavior"
+			InitialValue=""
+			Type="String"
+			EditorType=""
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="ExitCode"
+			Visible=false
+			Group="Behavior"
+			InitialValue=""
+			Type="Integer"
+			EditorType=""
+		#tag EndViewProperty
+		#tag ViewProperty
+			Name="TimedOut"
+			Visible=false
+			Group="Behavior"
+			InitialValue=""
+			Type="Boolean"
 			EditorType=""
 		#tag EndViewProperty
 	#tag EndViewBehavior

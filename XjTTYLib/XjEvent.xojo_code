@@ -8,56 +8,45 @@ Protected Class XjEvent
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Function EventType() As Integer
-		  Return mEventType
+		Shared Function CreateCustomEvent(name As String, data As Variant) As XjEvent
+		  Var e As New XjEvent(EVENT_CUSTOM)
+		  e.mCustomName = name
+		  e.mCustomData = data
+		  Return e
 		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Function Key() As XjKeyEvent
-		  Return mKey
+		Shared Function CreateKeyEvent(key As XjKeyEvent) As XjEvent
+		  Var e As New XjEvent(EVENT_KEY)
+		  e.mKey = key
+		  Return e
 		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Function MouseButton() As Integer
-		  Return mMouseButton
+		Shared Function CreateMouseEvent(button As Integer, x As Integer, y As Integer, action As Integer) As XjEvent
+		  Var e As New XjEvent(EVENT_MOUSE)
+		  e.mMouseButton = button
+		  e.mMouseX = x
+		  e.mMouseY = y
+		  e.mMouseAction = action
+		  Return e
 		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Function MouseX() As Integer
-		  Return mMouseX
+		Shared Function CreateResizeEvent(w As Integer, h As Integer) As XjEvent
+		  Var e As New XjEvent(EVENT_RESIZE)
+		  e.mResizeWidth = w
+		  e.mResizeHeight = h
+		  Return e
 		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Function MouseY() As Integer
-		  Return mMouseY
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Function MouseAction() As Integer
-		  Return mMouseAction
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Function ResizeWidth() As Integer
-		  Return mResizeWidth
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Function ResizeHeight() As Integer
-		  Return mResizeHeight
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Function CustomName() As String
-		  Return mCustomName
+		Shared Function CreateTickEvent() As XjEvent
+		  Return New XjEvent(EVENT_TICK)
 		End Function
 	#tag EndMethod
 
@@ -68,8 +57,14 @@ Protected Class XjEvent
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Function Timestamp() As Double
-		  Return mTimestamp
+		Function CustomName() As String
+		  Return mCustomName
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function EventType() As Integer
+		  Return mEventType
 		End Function
 	#tag EndMethod
 
@@ -98,6 +93,54 @@ Protected Class XjEvent
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
+		Function Key() As XjKeyEvent
+		  Return mKey
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function MouseAction() As Integer
+		  Return mMouseAction
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function MouseButton() As Integer
+		  Return mMouseButton
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function MouseX() As Integer
+		  Return mMouseX
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function MouseY() As Integer
+		  Return mMouseY
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function ResizeHeight() As Integer
+		  Return mResizeHeight
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function ResizeWidth() As Integer
+		  Return mResizeWidth
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function Timestamp() As Double
+		  Return mTimestamp
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
 		Function ToString() As String
 		  Select Case mEventType
 		  Case EVENT_KEY
@@ -119,53 +162,10 @@ Protected Class XjEvent
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h0
-		Shared Function CreateKeyEvent(key As XjKeyEvent) As XjEvent
-		  Var e As New XjEvent(EVENT_KEY)
-		  e.mKey = key
-		  Return e
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Shared Function CreateResizeEvent(w As Integer, h As Integer) As XjEvent
-		  Var e As New XjEvent(EVENT_RESIZE)
-		  e.mResizeWidth = w
-		  e.mResizeHeight = h
-		  Return e
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Shared Function CreateMouseEvent(button As Integer, x As Integer, y As Integer, action As Integer) As XjEvent
-		  Var e As New XjEvent(EVENT_MOUSE)
-		  e.mMouseButton = button
-		  e.mMouseX = x
-		  e.mMouseY = y
-		  e.mMouseAction = action
-		  Return e
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Shared Function CreateTickEvent() As XjEvent
-		  Return New XjEvent(EVENT_TICK)
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Shared Function CreateCustomEvent(name As String, data As Variant) As XjEvent
-		  Var e As New XjEvent(EVENT_CUSTOM)
-		  e.mCustomName = name
-		  e.mCustomData = data
-		  Return e
-		End Function
-	#tag EndMethod
-
 
 	#tag Note, Name = "About"
 		XjEvent — Universal Event Wrapper
-
+		
 		Part of XjTTY-Toolkit Phase 1.
 		Discriminated union for all event types:
 		- EVENT_KEY: keyboard input (wraps XjKeyEvent)
@@ -173,12 +173,21 @@ Protected Class XjEvent
 		- EVENT_RESIZE: terminal size change
 		- EVENT_TICK: periodic timer tick
 		- EVENT_CUSTOM: user-defined events
-
+		
 		Use factory methods to create:
 		  XjEvent.CreateKeyEvent(key)
 		  XjEvent.CreateResizeEvent(w, h)
 		  XjEvent.CreateMouseEvent(btn, x, y, action)
 	#tag EndNote
+
+
+	#tag Property, Flags = &h21
+		Private mCustomData As Variant
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mCustomName As String
+	#tag EndProperty
 
 	#tag Property, Flags = &h21
 		Private mEventType As Integer
@@ -186,6 +195,10 @@ Protected Class XjEvent
 
 	#tag Property, Flags = &h21
 		Private mKey As XjKeyEvent
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mMouseAction As Integer
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
@@ -201,7 +214,7 @@ Protected Class XjEvent
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
-		Private mMouseAction As Integer
+		Private mResizeHeight As Integer
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
@@ -209,21 +222,12 @@ Protected Class XjEvent
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
-		Private mResizeHeight As Integer
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mCustomName As String
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mCustomData As Variant
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
 		Private mTimestamp As Double
 	#tag EndProperty
 
+
+	#tag Constant, Name = EVENT_CUSTOM, Type = Double, Dynamic = False, Default = \"5", Scope = Public
+	#tag EndConstant
 
 	#tag Constant, Name = EVENT_KEY, Type = Double, Dynamic = False, Default = \"1", Scope = Public
 	#tag EndConstant
@@ -237,7 +241,7 @@ Protected Class XjEvent
 	#tag Constant, Name = EVENT_TICK, Type = Double, Dynamic = False, Default = \"4", Scope = Public
 	#tag EndConstant
 
-	#tag Constant, Name = EVENT_CUSTOM, Type = Double, Dynamic = False, Default = \"5", Scope = Public
+	#tag Constant, Name = MOUSE_MOVE, Type = Double, Dynamic = False, Default = \"2", Scope = Public
 	#tag EndConstant
 
 	#tag Constant, Name = MOUSE_PRESS, Type = Double, Dynamic = False, Default = \"0", Scope = Public
@@ -246,13 +250,10 @@ Protected Class XjEvent
 	#tag Constant, Name = MOUSE_RELEASE, Type = Double, Dynamic = False, Default = \"1", Scope = Public
 	#tag EndConstant
 
-	#tag Constant, Name = MOUSE_MOVE, Type = Double, Dynamic = False, Default = \"2", Scope = Public
+	#tag Constant, Name = MOUSE_SCROLL_DOWN, Type = Double, Dynamic = False, Default = \"4", Scope = Public
 	#tag EndConstant
 
 	#tag Constant, Name = MOUSE_SCROLL_UP, Type = Double, Dynamic = False, Default = \"3", Scope = Public
-	#tag EndConstant
-
-	#tag Constant, Name = MOUSE_SCROLL_DOWN, Type = Double, Dynamic = False, Default = \"4", Scope = Public
 	#tag EndConstant
 
 

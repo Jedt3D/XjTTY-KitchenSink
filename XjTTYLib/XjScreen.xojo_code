@@ -8,23 +8,9 @@ Protected Module XjScreen
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Sub ClearLine()
-		  // Clear the entire current line
-		  XjTerminal.Write(XjANSI.EraseLine)
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Sub ClearToEnd()
-		  // Clear from cursor to end of line
-		  XjTerminal.Write(XjANSI.EraseToEndOfLine)
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Sub ClearToStart()
-		  // Clear from cursor to start of line
-		  XjTerminal.Write(XjANSI.EraseToStartOfLine)
+		Sub ClearAbove()
+		  // Clear from cursor to start of screen
+		  XjTerminal.Write(XjANSI.EraseUp)
 		End Sub
 	#tag EndMethod
 
@@ -36,9 +22,9 @@ Protected Module XjScreen
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Sub ClearAbove()
-		  // Clear from cursor to start of screen
-		  XjTerminal.Write(XjANSI.EraseUp)
+		Sub ClearLine()
+		  // Clear the entire current line
+		  XjTerminal.Write(XjANSI.EraseLine)
 		End Sub
 	#tag EndMethod
 
@@ -57,62 +43,16 @@ Protected Module XjScreen
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Sub ScrollUp(n As Integer)
-		  // Scroll content up by n lines (new blank lines at bottom)
-		  If n > 0 Then XjTerminal.Write(XjANSI.ScrollUp(n))
+		Sub ClearToEnd()
+		  // Clear from cursor to end of line
+		  XjTerminal.Write(XjANSI.EraseToEndOfLine)
 		End Sub
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Sub ScrollDown(n As Integer)
-		  // Scroll content down by n lines (new blank lines at top)
-		  If n > 0 Then XjTerminal.Write(XjANSI.ScrollDown(n))
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Function Width() As Integer
-		  Return XjTerminal.Width
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Function Height() As Integer
-		  Return XjTerminal.Height
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Sub SetTitle(title As String)
-		  // Set terminal window title
-		  XjTerminal.Write(XjANSI.SetTitle(title))
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Sub EnterFullscreen()
-		  // Enter fullscreen mode: alternate screen + hide cursor + clear
-		  XjTerminal.EnterAlternateScreen
-		  XjCursor.Hide
-		  Clear
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Sub ExitFullscreen()
-		  // Exit fullscreen mode: show cursor + restore main screen
-		  XjCursor.Show
-		  XjTerminal.ExitAlternateScreen
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Sub WriteAt(row As Integer, col As Integer, text As String)
-		  // Write text at a specific position without moving cursor permanently
-		  XjCursor.Save
-		  XjCursor.MoveTo(row, col)
-		  XjTerminal.Write(text)
-		  XjCursor.Restore
+		Sub ClearToStart()
+		  // Clear from cursor to start of line
+		  XjTerminal.Write(XjANSI.EraseToStartOfLine)
 		End Sub
 	#tag EndMethod
 
@@ -149,6 +89,23 @@ Protected Module XjScreen
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
+		Sub EnterFullscreen()
+		  // Enter fullscreen mode: alternate screen + hide cursor + clear
+		  XjTerminal.EnterAlternateScreen
+		  XjCursor.Hide
+		  Clear
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub ExitFullscreen()
+		  // Exit fullscreen mode: show cursor + restore main screen
+		  XjCursor.Show
+		  XjTerminal.ExitAlternateScreen
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
 		Sub FillRect(row As Integer, col As Integer, width As Integer, height As Integer, char As String)
 		  // Fill a rectangular area with a character
 		  If char = "" Then char = " "
@@ -168,13 +125,56 @@ Protected Module XjScreen
 		End Sub
 	#tag EndMethod
 
+	#tag Method, Flags = &h0
+		Function Height() As Integer
+		  Return XjTerminal.Height
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub ScrollDown(n As Integer)
+		  // Scroll content down by n lines (new blank lines at top)
+		  If n > 0 Then XjTerminal.Write(XjANSI.ScrollDown(n))
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub ScrollUp(n As Integer)
+		  // Scroll content up by n lines (new blank lines at bottom)
+		  If n > 0 Then XjTerminal.Write(XjANSI.ScrollUp(n))
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub SetTitle(title As String)
+		  // Set terminal window title
+		  XjTerminal.Write(XjANSI.SetTitle(title))
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function Width() As Integer
+		  Return XjTerminal.Width
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Sub WriteAt(row As Integer, col As Integer, text As String)
+		  // Write text at a specific position without moving cursor permanently
+		  XjCursor.Save
+		  XjCursor.MoveTo(row, col)
+		  XjTerminal.Write(text)
+		  XjCursor.Restore
+		End Sub
+	#tag EndMethod
+
 
 	#tag Note, Name = "About"
 		XjScreen — Screen Management
-
+		
 		Part of XjTTY-Toolkit foundation layer.
 		Provides screen-level operations:
-
+		
 		- Clearing: Clear, ClearLine, ClearToEnd, ClearAbove/Below
 		- Scrolling: ScrollUp, ScrollDown
 		- Dimensions: Width, Height

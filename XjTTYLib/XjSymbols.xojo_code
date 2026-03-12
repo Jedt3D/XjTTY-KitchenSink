@@ -46,23 +46,24 @@ Protected Module XjSymbols
 
 	#tag Note, Name = "About"
 		XjSymbols — Prompt Symbols Configuration
-
+		
 		Part of XjTTY-Toolkit Phase 4 (Prompt System).
 		Configurable Unicode/ASCII symbols used by all prompts.
 		Call UseASCII() for ASCII-only terminals.
 		EnsureInit() is called automatically before first use.
 	#tag EndNote
 
+
 	#tag Property, Flags = &h0
-		Marker As String
+		ArrowRight As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		Bullet As String
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
 		Check As String
-	#tag EndProperty
-
-	#tag Property, Flags = &h0
-		Cross As String
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -74,19 +75,7 @@ Protected Module XjSymbols
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
-		Square As String
-	#tag EndProperty
-
-	#tag Property, Flags = &h0
-		SquareEmpty As String
-	#tag EndProperty
-
-	#tag Property, Flags = &h0
-		ArrowRight As String
-	#tag EndProperty
-
-	#tag Property, Flags = &h0
-		Bullet As String
+		Cross As String
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -94,12 +83,25 @@ Protected Module XjSymbols
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
-		QuestionMark As String = "?"
+		Marker As String
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
 		Private mInitialized As Boolean
 	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		QuestionMark As String = "?"
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		Square As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		SquareEmpty As String
+	#tag EndProperty
+
 
 End Module
 #tag EndModule

@@ -1,20 +1,14 @@
 #tag Class
 Protected Class XjFocusManager
 	#tag Method, Flags = &h0
-		Sub Constructor()
-		  mFocusIndex = -1
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
 		Sub BuildChain(root As XjWidget)
 		  // Walk the widget tree and collect focusable widgets
 		  While mFocusChain.Count > 0
 		    mFocusChain.RemoveAt(0)
 		  Wend
-
+		  
 		  root.CollectFocusable(mFocusChain)
-
+		  
 		  // If there are focusable widgets and none focused, focus the first
 		  If mFocusChain.Count > 0 And mFocusIndex < 0 Then
 		    mFocusIndex = 0
@@ -24,20 +18,41 @@ Protected Class XjFocusManager
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
+		Sub Constructor()
+		  mFocusIndex = -1
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function FocusCount() As Integer
+		  Return mFocusChain.Count
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
+		Function FocusedWidget() As XjWidget
+		  If mFocusIndex >= 0 And mFocusIndex < mFocusChain.Count Then
+		    Return mFocusChain(mFocusIndex)
+		  End If
+		  Return Nil
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
 		Sub FocusNext()
 		  If mFocusChain.Count = 0 Then Return
-
+		  
 		  // Unfocus current
 		  If mFocusIndex >= 0 And mFocusIndex < mFocusChain.Count Then
 		    mFocusChain(mFocusIndex).SetFocused(False)
 		  End If
-
+		  
 		  // Advance
 		  mFocusIndex = mFocusIndex + 1
 		  If mFocusIndex >= mFocusChain.Count Then
 		    mFocusIndex = 0
 		  End If
-
+		  
 		  mFocusChain(mFocusIndex).SetFocused(True)
 		End Sub
 	#tag EndMethod
@@ -45,18 +60,18 @@ Protected Class XjFocusManager
 	#tag Method, Flags = &h0
 		Sub FocusPrev()
 		  If mFocusChain.Count = 0 Then Return
-
+		  
 		  // Unfocus current
 		  If mFocusIndex >= 0 And mFocusIndex < mFocusChain.Count Then
 		    mFocusChain(mFocusIndex).SetFocused(False)
 		  End If
-
+		  
 		  // Go back
 		  mFocusIndex = mFocusIndex - 1
 		  If mFocusIndex < 0 Then
 		    mFocusIndex = mFocusChain.Count - 1
 		  End If
-
+		  
 		  mFocusChain(mFocusIndex).SetFocused(True)
 		End Sub
 	#tag EndMethod
@@ -72,52 +87,38 @@ Protected Class XjFocusManager
 		    End If
 		    Return True
 		  End If
-
+		  
 		  // BackTab (Shift+Tab on some terminals)
 		  If key.KeyCode = XjKeyEvent.KEY_BACKTAB Then
 		    FocusPrev
 		    Return True
 		  End If
-
+		  
 		  // Route to focused widget
 		  If mFocusIndex >= 0 And mFocusIndex < mFocusChain.Count Then
 		    Return mFocusChain(mFocusIndex).HandleKey(key)
 		  End If
-
+		  
 		  Return False
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Function FocusedWidget() As XjWidget
-		  If mFocusIndex >= 0 And mFocusIndex < mFocusChain.Count Then
-		    Return mFocusChain(mFocusIndex)
-		  End If
-		  Return Nil
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h0
-		Function FocusCount() As Integer
-		  Return mFocusChain.Count
 		End Function
 	#tag EndMethod
 
 
 	#tag Note, Name = "About"
 		XjFocusManager — Focus Cycling
-
+		
 		Part of XjTTY-Toolkit Phase 3 (Widget System).
 		Manages Tab/Shift-Tab focus cycling across focusable
 		widgets in a widget tree. Routes key events to the
 		currently focused widget.
-
+		
 		Usage:
 		  Var fm As New XjFocusManager
 		  fm.BuildChain(rootWidget)
 		  // In key handler:
 		  If fm.HandleKey(key) Then Return
 	#tag EndNote
+
 
 	#tag Property, Flags = &h21
 		Private mFocusChain() As XjWidget

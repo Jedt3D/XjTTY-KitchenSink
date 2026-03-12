@@ -60,6 +60,7 @@ This project uses a **structured multi-role agent team**. Each phase follows the
 | Phase | Name | Status |
 |-------|------|--------|
 | Setup | Team infrastructure, docs, git | ✅ Done |
+| Scaffold | KSApp rename, XjTTYLib attached to project | ✅ Done |
 | Phase 1 | Skeleton (layout shell, event loop) | ⬜ Pending |
 | Phase 2 | Component Registry + Tree Navigation | ⬜ Pending |
 | Phase 3 | Search + Autocomplete | ⬜ Pending |
@@ -102,6 +103,7 @@ Minimum terminal size: 80×24. Guard in resize handler.
 
 ## Xojo-Specific Notes & Gotchas
 
+- **Entry point class is `KSApp`** — Xojo boilerplate defaults to `App`; renamed to match `KS` prefix convention
 - **No modification to XjTTYLib** — it's a library dependency, not project code
 - **Delegate wiring** uses `AddressOf` — ensure method signatures match exactly
 - **XjTreeNode** children added before adding root to XjTree

@@ -29,17 +29,14 @@ Protected Class XjPromptStyle
 
 	#tag Note, Name = "About"
 		XjPromptStyle — Prompt Color Configuration
-
+		
 		Part of XjTTY-Toolkit Phase 4 (Prompt System).
 		Holds style/color settings for all prompt types.
 	#tag EndNote
 
-	#tag Property, Flags = &h0
-		PrefixStyle As XjStyle
-	#tag EndProperty
 
 	#tag Property, Flags = &h0
-		QuestionStyle As XjStyle
+		ActiveStyle As XjStyle
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -47,19 +44,7 @@ Protected Class XjPromptStyle
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
-		HelpStyle As XjStyle
-	#tag EndProperty
-
-	#tag Property, Flags = &h0
-		ErrorStyle As XjStyle
-	#tag EndProperty
-
-	#tag Property, Flags = &h0
-		ActiveStyle As XjStyle
-	#tag EndProperty
-
-	#tag Property, Flags = &h0
-		InactiveStyle As XjStyle
+		CursorStyle As XjStyle
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -67,7 +52,7 @@ Protected Class XjPromptStyle
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
-		CursorStyle As XjStyle
+		ErrorStyle As XjStyle
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -75,11 +60,27 @@ Protected Class XjPromptStyle
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
-		PlaceholderStyle As XjStyle
+		HelpStyle As XjStyle
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		InactiveStyle As XjStyle
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
 		Private Shared mDefault As XjPromptStyle
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		PlaceholderStyle As XjStyle
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		PrefixStyle As XjStyle
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		QuestionStyle As XjStyle
 	#tag EndProperty
 
 
