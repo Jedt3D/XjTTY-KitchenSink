@@ -20,12 +20,41 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - XjBox, XjText, XjTextInput, XjTable, XjProgressBar, XjSpinner, XjTree interaction
 - XjFont (type to change), XjPie (adjust slices), XjStyle (cycle colors), XjKeyEvent (live display)
 
-### Phase 4 — Static Previews *(pending)*
-- KSPreviewBuilder: all 31 component preview builders
-- Prompt mockups (styled text representation of each prompt)
-- Reference cards: XjCanvas, XjEventLoop, XjConstraint, XjLayoutNode, XjLayoutSolver
-- Properties table populated per component
+### Phase 5 — Interactive Previews *(pending)*
+- Live key routing to preview widgets (focus zone 3)
+- XjBox, XjText, XjTextInput, XjTable, XjProgressBar, XjSpinner, XjTree interaction
+- XjFont (type to change), XjPie (adjust slices), XjStyle (cycle colors), XjKeyEvent (live display)
 
+### Phase 6 — Polish *(pending)*
+- Help overlay (`?` key)
+- Category jump shortcuts (`1`–`6`)
+- Page Up/Down, Home/End in component list
+- Smooth animations (spinner, progress bounce)
+- Edge case handling: rapid resize, empty search, boundary values
+
+
+---
+
+## [0.5.0] — 2026-03-13
+
+### Added — Phase 4: Static Previews
+
+- `KSPreviewBuilder.xojo_code`: stateless factory module with `LoadInto(entry As KSComponentEntry, titleText As XjText, bodyText As XjText, propsTable As XjTable)` — populates all three preview widgets from a single component entry; truncates keywords to 40 chars with ellipsis; appends interactive notice for Phase-5 components
+- `KSApp.mPreviewTitle` (XjText): 1-row header widget in livePreview, fixed height 1, ANSI cyan+bold, center-aligned; shows `"Name  [Category]"`
+- `KSApp.mPreviewBody` (XjText): auto-height body widget in livePreview, word-wrap enabled, left-aligned; shows long description + keywords
+- `KSApp.mPropsTable` (XjTable): 2-column property sheet in propertiesPanel, headers ["Property", "Value"], column 0 fixed at 12 chars; rows: Name, Category, Interactive, Keywords
+- `KitchenSink.xojo_project`: registered `KSPreviewBuilder` module
+
+### Changed
+
+- `KSApp.SelectLine()`: now calls `KSPreviewBuilder.LoadInto(entry, mPreviewTitle, mPreviewBody, mPropsTable)` on each navigation step; category rows clear all three preview widgets
+- `KSApp.ApplySearch()`: no-match branch now clears all three preview widgets (`SetText("")`, `ClearRows()`)
+- `KSApp.BuildWidgetTree()`: replaced single `mCurrentLabel` XjText with three dedicated preview widgets built at startup
+- Removed `mCurrentLabel` property; added `mPreviewTitle`, `mPreviewBody`, `mPropsTable`
+
+### Technical Note
+
+- Confirmed: `XjWidget` / `XjBox` have **no `RemoveAllChildren`** method — child-swapping is impossible. Phase 4 uses persistent pre-built widgets updated in-place, avoiding any widget-tree mutation after startup.
 
 ---
 

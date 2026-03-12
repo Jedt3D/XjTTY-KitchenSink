@@ -1,6 +1,6 @@
 # CLAUDE.md — XjTTY-KitchenSink Project Context
 
-> อัปเดตโดย @documentator · 2026-03-13 (Phase 3)
+> อัปเดตโดย @documentator · 2026-03-13 (Phase 4)
 
 ---
 
@@ -64,7 +64,7 @@ This project uses a **structured multi-role agent team**. Each phase follows the
 | Phase 1 | Skeleton (layout shell, event loop) | ✅ Done |
 | Phase 2 | Component Registry + Tree Navigation | ✅ Done |
 | Phase 3 | Search + Autocomplete | ✅ Done |
-| Phase 4 | Static Previews (29 components) | ⬜ Pending |
+| Phase 4 | Static Previews (KSPreviewBuilder + 3 preview widgets) | ✅ Done |
 | Phase 5 | Interactive Previews (15 components) | ⬜ Pending |
 | Phase 6 | Polish (help overlay, edge cases) | ⬜ Pending |
 
@@ -75,12 +75,12 @@ This project uses a **structured multi-role agent team**. Each phase follows the
 ### File Structure (current source files)
 ```
 KitchenSink.xojo_project      — console app project file
-KSApp.xojo_code               — App class: event loop, layout tree, key routing, tree navigation
+KSApp.xojo_code               — App class: event loop, layout tree, key routing, tree navigation, preview widgets
 KSComponentEntry.xojo_code    — Data class: 6 public fields per component (Name, Category, ShortDesc, LongDesc, Keywords, IsInteractive)
 KSComponentRegistry.xojo_code — Module: Init() + 31 entries; Categories(), EntriesForCategory(), EntryAt(), Count(), Search()
+KSPreviewBuilder.xojo_code    — Module: stateless factory; LoadInto(entry, titleText, bodyText, propsTable) populates all 3 preview widgets
 XjTTYLib/                     — library (read-only, 59 files)
 ```
-**Planned (Phase 4+):** `KSPreviewBuilder.xojo_code`
 
 ### Layout Architecture
 4-panel fullscreen layout using `XjLayoutNode` / `XjBox`:
@@ -100,7 +100,8 @@ Minimum terminal size: 80×24. Guard in resize handler.
 - **Shared tree builder**: `RebuildTree(entries() As KSComponentEntry)` is called by both `PopulateTree()` (all 31) and `ApplySearch()` (filtered subset). Categories with no matching entries are omitted automatically.
 - **XjTextInput focus**: Call `SetFocused(True)` before routing keys to XjTextInput — it returns False without processing if `mFocused = False`.
 - **Search**: `KSComponentRegistry.Search(query)` uses `Instr(field.Lowercase, query.Lowercase) > 0` across Name, ShortDesc, Keywords, Category.
-- **Preview swapping** (Phase 4): `livePreview.RemoveAllChildren()` → `BuildPreview(entry)` → `livePreview.AddChild(preview)`
+- **Static preview pattern** (Phase 4): Pre-build `mPreviewTitle` (XjText, Fixed(1), cyan+bold), `mPreviewBody` (XjText, auto, wrap), and `mPropsTable` (XjTable, 2 cols, col-0 width=12) at startup. On navigation call `KSPreviewBuilder.LoadInto(entry, mPreviewTitle, mPreviewBody, mPropsTable)` — no widget rebuild needed, just update content via `SetText()` / `ClearRows()` + `AddRow()`.
+- **⚠️ No RemoveAllChildren on XjWidget/XjBox** — confirmed by reading XjWidget.xojo_code. Use persistent pre-built widgets and update content instead of swapping child widgets.
 - **Rendering**: ~30fps via `XjEventLoop(33)`. Full clear+paint each tick.
 - **RemoveAll for arrays**: Use `.RemoveAll` to clear dynamic arrays (confirmed in XjTree source).
 

@@ -3,9 +3,13 @@
 //      canvas, and all top-level UI state. Other modules (Registry, PreviewBuilder)
 //      are stateless factories or data stores that KSApp orchestrates.
 //      Phase 3: two-mode key routing — list mode (default) and search mode.
+//      Phase 4: static previews — KSPreviewBuilder populates mPreviewTitle,
+//               mPreviewBody, and mPropsTable on every navigation step.
 // [TH] KSApp คือจุดเริ่มต้นของแอปพลิเคชัน เป็นเจ้าของ widget tree, event loop,
 //      canvas และ state ระดับบนสุดทั้งหมด
 //      Phase 3: key routing สองโหมด — list mode (เริ่มต้น) และ search mode
+//      Phase 4: static previews — KSPreviewBuilder ป้อนข้อมูล mPreviewTitle,
+//               mPreviewBody และ mPropsTable ทุกครั้งที่ navigate
 Protected Class KSApp
 Inherits ConsoleApplication
 	#tag Event
@@ -64,6 +68,9 @@ Inherits ConsoleApplication
 		  Else
 		    mSelectedLine = -1
 		    Call mStatusDesc.SetText(" No matches   Esc cancel")
+		    Call mPreviewTitle.SetText("")
+		    Call mPreviewBody.SetText("")
+		    mPropsTable.ClearRows()
 		  End If
 		End Sub
 	#tag EndMethod
@@ -136,10 +143,24 @@ Inherits ConsoleApplication
 		  Call livePreview.SetDirection(XjLayoutNode.DIR_COLUMN)
 		  previewArea.AddChild(livePreview)
 
-		  mCurrentLabel = New XjText
-		  Call mCurrentLabel.SetText("<- select a component")
-		  Call mCurrentLabel.SetAlign(XjText.ALIGN_CENTER)
-		  livePreview.AddChild(mCurrentLabel)
+		  // [EN] mPreviewTitle: 1-row header showing "Name  [Category]" in cyan bold
+		  // [TH] mPreviewTitle: header 1 แถว แสดง "ชื่อ  [Category]" สี cyan ตัวหนา
+		  mPreviewTitle = New XjText
+		  Call mPreviewTitle.SetHeight(XjConstraint.Fixed(1))
+		  Call mPreviewTitle.SetText("<- select a component")
+		  Call mPreviewTitle.SetAlign(XjText.ALIGN_CENTER)
+		  Var titleBase As New XjStyle
+		  Var titleWithCyan As XjStyle = titleBase.SetFG(XjANSI.FG_CYAN)
+		  Var titleStyle As XjStyle = titleWithCyan.SetBold()
+		  Call mPreviewTitle.SetStyle(titleStyle)
+		  livePreview.AddChild(mPreviewTitle)
+
+		  // [EN] mPreviewBody: fills remaining height, word-wrapped long description
+		  // [TH] mPreviewBody: ขยายเต็มความสูงที่เหลือ คำอธิบายยาวตัดคำ
+		  mPreviewBody = New XjText
+		  Call mPreviewBody.SetWrap(True)
+		  Call mPreviewBody.SetAlign(XjText.ALIGN_LEFT)
+		  livePreview.AddChild(mPreviewBody)
 
 		  // [EN] Properties panel: 30% of preview height, min 5 rows
 		  // [TH] Properties panel: 30% ของความสูง preview, ขั้นต่ำ 5 แถว
@@ -148,6 +169,16 @@ Inherits ConsoleApplication
 		  Call propertiesPanel.SetBorder(0, New XjStyle)
 		  Call propertiesPanel.SetTitle(" Properties ")
 		  previewArea.AddChild(propertiesPanel)
+
+		  // [EN] mPropsTable: 2-column property sheet; column 0 fixed at 12 chars
+		  // [TH] mPropsTable: ตาราง property 2 คอลัมน์; คอลัมน์ 0 กว้างคงที่ 12 ตัวอักษร
+		  mPropsTable = New XjTable
+		  Var propHeaders() As String
+		  propHeaders.Add("Property")
+		  propHeaders.Add("Value")
+		  Call mPropsTable.SetHeaders(propHeaders)
+		  Call mPropsTable.SetColumnWidth(0, 12)
+		  propertiesPanel.AddChild(mPropsTable)
 
 		  // [EN] Status bar: 1 row, DIR_ROW — description (auto) + key hint (fixed 30)
 		  // [TH] Status bar: 1 แถว DIR_ROW — คำอธิบาย (auto) + key hint (fixed 30)
@@ -267,8 +298,8 @@ Inherits ConsoleApplication
 		    End If
 
 		  Case XjKeyEvent.KEY_ENTER
-		    // [EN] Phase 4: launch KSPreviewBuilder. For now, acknowledge in status bar.
-		    // [TH] Phase 4: เรียก KSPreviewBuilder ตอนนี้แสดงใน status bar
+		    // [EN] Enter: re-select current line to refresh preview (navigation already handles it via SelectLine)
+		    // [TH] Enter: เลือก line ปัจจุบันอีกครั้งเพื่อรีเฟรช preview
 		    If mSelectedLine >= 0 And mSelectedLine < mFlatEntries.Count Then
 		      Var entry As KSComponentEntry = mFlatEntries(mSelectedLine)
 		      If Not (entry Is Nil) Then
@@ -420,15 +451,17 @@ Inherits ConsoleApplication
 		  Var invStyle As XjStyle = invBase.SetInverse()
 		  Call mFlatNodes(lineIdx).SetNodeStyle(invStyle)
 
-		  // [EN] Update status bar and preview label
-		  // [TH] อัปเดต status bar และ preview label
+		  // [EN] Update status bar and preview widgets
+		  // [TH] อัปเดต status bar และ preview widgets
 		  Var entry As KSComponentEntry = mFlatEntries(lineIdx)
 		  If entry Is Nil Then
 		    Call mStatusDesc.SetText(" [" + mFlatNodes(lineIdx).Label + "] category")
-		    Call mCurrentLabel.SetText("<- select a component")
+		    Call mPreviewTitle.SetText("<- select a component")
+		    Call mPreviewBody.SetText("")
+		    mPropsTable.ClearRows()
 		  Else
 		    Call mStatusDesc.SetText(" " + entry.ShortDesc)
-		    Call mCurrentLabel.SetText(entry.Name)
+		    KSPreviewBuilder.LoadInto(entry, mPreviewTitle, mPreviewBody, mPropsTable)
 		  End If
 
 		  // [EN] Scroll: mTermHeight − 11 = visible rows inside componentList
@@ -448,11 +481,13 @@ Inherits ConsoleApplication
 
 
 	// [EN] mCanvas        — 2D character buffer sized to current terminal dimensions
-	// [EN] mCurrentLabel  — XjText in livePreview showing selected component name
 	// [EN] mFlatEntries   — parallel to mFlatNodes; Nil = category row, else entry
 	// [EN] mFlatNodes     — XjTreeNode references in visible tree order
 	// [EN] mListTree      — XjTree widget inside componentList panel
 	// [EN] mLoop          — 30fps event loop; owns raw mode, alternate screen, callbacks
+	// [EN] mPreviewBody   — XjText in livePreview showing long description + keywords
+	// [EN] mPreviewTitle  — XjText in livePreview showing "Name  [Category]" header
+	// [EN] mPropsTable    — XjTable in propertiesPanel; 2-column property sheet
 	// [EN] mRoot          — root of the widget tree; parent of all 4 panels
 	// [EN] mScrollOffset  — current XjTree scroll position (first visible line index)
 	// [EN] mSearchInput   — XjTextInput in searchBar; receives keys in search mode
@@ -461,11 +496,13 @@ Inherits ConsoleApplication
 	// [EN] mStatusDesc    — XjText in status bar; shows ShortDesc or search feedback
 	// [EN] mTermWidth/Height — current terminal dimensions, updated on every resize
 	// [TH] mCanvas        — บัฟเฟอร์อักขระ 2D ตรงกับขนาด terminal ปัจจุบัน
-	// [TH] mCurrentLabel  — XjText ใน livePreview แสดงชื่อ component ที่เลือก
 	// [TH] mFlatEntries   — คู่ขนานกับ mFlatNodes; Nil = แถว category, มิฉะนั้น entry
 	// [TH] mFlatNodes     — อ้างอิง XjTreeNode ตามลำดับที่มองเห็นใน tree
 	// [TH] mListTree      — XjTree widget ภายใน panel componentList
 	// [TH] mLoop          — event loop 30fps; ควบคุม raw mode, alternate screen, callback
+	// [TH] mPreviewBody   — XjText ใน livePreview แสดงคำอธิบายยาว + keywords
+	// [TH] mPreviewTitle  — XjText ใน livePreview แสดง header "ชื่อ  [Category]"
+	// [TH] mPropsTable    — XjTable ใน propertiesPanel ตาราง property 2 คอลัมน์
 	// [TH] mRoot          — root ของ widget tree; parent ของ panel ทั้ง 4 ส่วน
 	// [TH] mScrollOffset  — ตำแหน่ง scroll ปัจจุบัน XjTree (index บรรทัดแรกที่มองเห็น)
 	// [TH] mSearchInput   — XjTextInput ใน searchBar; รับ key ใน search mode
@@ -475,10 +512,6 @@ Inherits ConsoleApplication
 	// [TH] mTermWidth/Height — ขนาด terminal ปัจจุบัน อัปเดตทุกครั้งที่ resize
 	#tag Property, Flags = &h21
 		Private mCanvas As XjCanvas
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mCurrentLabel As XjText
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
@@ -495,6 +528,18 @@ Inherits ConsoleApplication
 
 	#tag Property, Flags = &h21
 		Private mLoop As XjEventLoop
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mPreviewBody As XjText
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mPreviewTitle As XjText
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mPropsTable As XjTable
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
