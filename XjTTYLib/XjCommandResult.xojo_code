@@ -89,7 +89,7 @@ Protected Class XjCommandResult
 			Group="Behavior"
 			InitialValue=""
 			Type="String"
-			EditorType=""
+			EditorType="MultiLineEditor"
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="ExitCode"

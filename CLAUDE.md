@@ -61,7 +61,7 @@ This project uses a **structured multi-role agent team**. Each phase follows the
 |-------|------|--------|
 | Setup | Team infrastructure, docs, git | ✅ Done |
 | Scaffold | KSApp rename, XjTTYLib attached to project | ✅ Done |
-| Phase 1 | Skeleton (layout shell, event loop) | ⬜ Pending |
+| Phase 1 | Skeleton (layout shell, event loop) | ✅ Done |
 | Phase 2 | Component Registry + Tree Navigation | ⬜ Pending |
 | Phase 3 | Search + Autocomplete | ⬜ Pending |
 | Phase 4 | Static Previews (29 components) | ⬜ Pending |
@@ -105,6 +105,7 @@ Minimum terminal size: 80×24. Guard in resize handler.
 
 - **Entry point class is `KSApp`** — Xojo boilerplate defaults to `App`; renamed to match `KS` prefix convention
 - **No modification to XjTTYLib** — it's a library dependency, not project code
+- **⚠️ IDE drops Module entries from .xojo_project** — When attaching a folder in Xojo IDE, `Class=` entries are preserved correctly but `Module=` entries either get path `../../../../../../..` or disappear entirely. Must be manually corrected in `KitchenSink.xojo_project` with paths like `XjTTYLib/XjANSI.xojo_code`. Affects: XjTerminal, XjScreen, XjANSI, XjLayoutSolver, XjColor, XjSymbols, XjCursor, XjFont, XjYAML, XjConversion, XjPlatform, XjCommand, XjMarkdown, XjUIParser, XjPrompt, XjWhich
 - **Delegate wiring** uses `AddressOf` — ensure method signatures match exactly
 - **XjTreeNode** children added before adding root to XjTree
 - **Prompt previews are MOCKUPS** — prompts conflict with the event loop; render as styled XjText

@@ -40,6 +40,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.2.0] — 2026-03-13
+
+### Added — Phase 1: Skeleton
+- `KSApp.xojo_code`: full implementation with 4-panel layout, XjEventLoop (33ms/~30fps),
+  resize guard (min 80×24), `q`/Ctrl+C quit, and render pipeline
+- Bilingual [EN]/[TH] inline comments added to `KSApp.xojo_code` by @documentator
+- **Verified:** App launches fullscreen at 83×25, all panels render correctly
+  (XjTTY-Toolkit Kitchen Sink, Components, Preview, Properties borders + titles)
+
+### Fixed
+- `KitchenSink.xojo_project`: restored 15 missing `Module=` entries with correct
+  relative paths (`XjTTYLib/XjTerminal.xojo_code`, etc.) — Xojo IDE drops module
+  references when attaching a folder, silently breaking all XjTTYLib module calls
+
+---
+
 ## [0.1.1] — 2026-03-13
 
 ### Changed — Project Scaffold Finalized
