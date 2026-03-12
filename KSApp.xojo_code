@@ -1,15 +1,19 @@
 #tag Class
 // [EN] KSApp is the application entry point. It owns the widget tree, event loop,
-//      canvas, and all top-level UI state. Other modules (Registry, PreviewBuilder)
-//      are stateless factories or data stores that KSApp orchestrates.
+//      canvas, and all top-level UI state. Other modules (Registry, PreviewBuilder,
+//      InteractiveLoader) are stateless factories or data stores that KSApp orchestrates.
 //      Phase 3: two-mode key routing — list mode (default) and search mode.
 //      Phase 4: static previews — KSPreviewBuilder populates mPreviewTitle,
 //               mPreviewBody, and mPropsTable on every navigation step.
+//      Phase 5: interactive previews — three focus zones; Tab enters the live demo
+//               widget in the preview panel; Esc returns to list navigation.
 // [TH] KSApp คือจุดเริ่มต้นของแอปพลิเคชัน เป็นเจ้าของ widget tree, event loop,
 //      canvas และ state ระดับบนสุดทั้งหมด
 //      Phase 3: key routing สองโหมด — list mode (เริ่มต้น) และ search mode
 //      Phase 4: static previews — KSPreviewBuilder ป้อนข้อมูล mPreviewTitle,
 //               mPreviewBody และ mPropsTable ทุกครั้งที่ navigate
+//      Phase 5: interactive previews — 3 focus zones; Tab เข้า live demo widget
+//               ใน preview panel; Esc กลับสู่ list navigation
 Protected Class KSApp
 Inherits ConsoleApplication
 	#tag Event
@@ -39,6 +43,44 @@ Inherits ConsoleApplication
 		End Function
 	#tag EndEvent
 
+
+	#tag Method, Flags = &h21
+		Private Sub ActivateDemoWidget(demoType As String)
+		  // [EN] Collapse all Phase 5 demo widgets, then reveal the one matching demoType.
+		  //      Also resets mPreviewFocus when the demo type changes (no focus to nothing).
+		  // [TH] ย่อ demo widget ทั้งหมด แล้วเปิดเฉพาะ widget ที่ตรงกับ demoType
+		  //      รีเซ็ต mPreviewFocus เมื่อ demo type เปลี่ยน
+
+		  // [EN] Reset focus if switching away from current interactive widget
+		  // [TH] รีเซ็ต focus เมื่อออกจาก interactive widget ปัจจุบัน
+		  If demoType <> mDemoType Then
+		    mPreviewFocus = False
+		    Call mDemoInput.SetFocused(False)
+		  End If
+
+		  mDemoType = demoType
+
+		  // [EN] Collapse all demo widgets first
+		  // [TH] ย่อ demo widget ทั้งหมดก่อน
+		  Call mDemoInput.SetHeight(XjConstraint.Fixed(0))
+		  Call mDemoBar.SetHeight(XjConstraint.Fixed(0))
+		  Call mDemoSpinnerWidget.SetHeight(XjConstraint.Fixed(0))
+		  Call mDemoKeyText.SetHeight(XjConstraint.Fixed(0))
+
+		  // [EN] Reveal the relevant demo widget
+		  // [TH] เปิด demo widget ที่เกี่ยวข้อง
+		  Select Case demoType
+		  Case "textinput"
+		    Call mDemoInput.SetHeight(XjConstraint.Fixed(3))
+		  Case "progressbar"
+		    Call mDemoBar.SetHeight(XjConstraint.Fixed(2))
+		  Case "spinner"
+		    Call mDemoSpinnerWidget.SetHeight(XjConstraint.Fixed(2))
+		  Case "keyevent"
+		    Call mDemoKeyText.SetHeight(XjConstraint.Fixed(4))
+		  End Select
+		End Sub
+	#tag EndMethod
 
 	#tag Method, Flags = &h21
 		Private Sub ApplySearch(query As String)
@@ -162,6 +204,43 @@ Inherits ConsoleApplication
 		  Call mPreviewBody.SetAlign(XjText.ALIGN_LEFT)
 		  livePreview.AddChild(mPreviewBody)
 
+		  // [EN] Phase 5 demo widgets — all start collapsed (Fixed(0) height).
+		  //      ActivateDemoWidget() reveals one at a time by swapping height constraints.
+		  // [TH] Phase 5 demo widget ทั้งหมด — เริ่มต้นย่อ (Fixed(0))
+		  //      ActivateDemoWidget() เปิดทีละ widget โดยสลับ height constraint
+
+		  // [EN] mDemoInput: live XjTextInput demo — user types freely
+		  // [TH] mDemoInput: demo XjTextInput สด — ผู้ใช้พิมพ์ได้เลย
+		  mDemoInput = New XjTextInput
+		  Call mDemoInput.SetHeight(XjConstraint.Fixed(0))
+		  Call mDemoInput.SetPlaceholder("Type here to demo XjTextInput...")
+		  livePreview.AddChild(mDemoInput)
+
+		  // [EN] mDemoBar: live XjProgressBar demo — + increments, - decrements, Space resets
+		  // [TH] mDemoBar: demo XjProgressBar สด — + เพิ่ม, - ลด, Space รีเซ็ต
+		  mDemoBar = New XjProgressBar
+		  Call mDemoBar.SetHeight(XjConstraint.Fixed(0))
+		  Call mDemoBar.SetTotal(100)
+		  Var barFmtBase As New XjStyle
+		  Var barFmtGreen As XjStyle = barFmtBase.SetFG(XjANSI.FG_GREEN)
+		  Call mDemoBar.SetFilledStyle(barFmtGreen)
+		  livePreview.AddChild(mDemoBar)
+
+		  // [EN] mDemoSpinnerWidget: auto-animates via HandleTick; message shows key hint
+		  // [TH] mDemoSpinnerWidget: auto-animate ผ่าน HandleTick; message แสดง key hint
+		  mDemoSpinnerWidget = New XjSpinner
+		  Call mDemoSpinnerWidget.SetHeight(XjConstraint.Fixed(0))
+		  Call mDemoSpinnerWidget.SetFormat("dots")
+		  Call mDemoSpinnerWidget.SetMessage("Spinner demo — animates automatically")
+		  livePreview.AddChild(mDemoSpinnerWidget)
+
+		  // [EN] mDemoKeyText: shows the last key event (code, char, modifiers)
+		  // [TH] mDemoKeyText: แสดง key event ล่าสุด (code, char, modifier)
+		  mDemoKeyText = New XjText
+		  Call mDemoKeyText.SetHeight(XjConstraint.Fixed(0))
+		  Call mDemoKeyText.SetText("Press any key...")
+		  livePreview.AddChild(mDemoKeyText)
+
 		  // [EN] Properties panel: 30% of preview height, min 5 rows
 		  // [TH] Properties panel: 30% ของความสูง preview, ขั้นต่ำ 5 แถว
 		  Var propertiesPanel As New XjBox
@@ -224,20 +303,65 @@ Inherits ConsoleApplication
 
 	#tag Method, Flags = &h21
 		Private Sub HandleKey(key As XjKeyEvent)
-		  // [EN] Two-mode key router.
-		  //      Ctrl+C always quits from either mode.
-		  //      Search mode: Esc exits; Up/Down/Enter still navigate the filtered list;
-		  //                   all other keys feed mSearchInput then trigger ApplySearch.
-		  //      List mode:   '/' enters search; 'q' quits; arrows navigate tree.
-		  // [TH] key router สองโหมด
+		  // [EN] Three-mode key router (Phase 5).
+		  //      Ctrl+C always quits from any mode.
+		  //      Search mode: Esc exits; Up/Down/Enter navigate filtered list.
+		  //      Preview focus mode: routes keys to active demo widget; Esc returns to list.
+		  //      List mode (default): '/' search; Tab enters preview (interactive only);
+		  //                           'q' quits; arrows navigate tree.
+		  // [TH] key router สามโหมด (Phase 5)
 		  //      Ctrl+C ออกเสมอไม่ว่าจะอยู่โหมดไหน
-		  //      Search mode: Esc ออก; Up/Down/Enter ยังคง navigate; key อื่นๆ ส่งไปยัง input
-		  //      List mode: '/' เข้า search; 'q' ออก; arrow navigate tree
+		  //      Search mode: Esc ออก; Up/Down/Enter navigate list ที่กรองแล้ว
+		  //      Preview focus mode: ส่ง key ไปยัง demo widget; Esc กลับ list
+		  //      List mode (เริ่มต้น): '/' search; Tab เข้า preview; 'q' ออก; arrow navigate
 
 		  // [EN] Ctrl+C always quits
 		  // [TH] Ctrl+C ออกเสมอ
 		  If key.Char = Chr(3) Then
 		    mLoop.Stop_()
+		    Return
+		  End If
+
+		  // [EN] Preview focus zone: route keys to the active demo widget
+		  // [TH] Preview focus zone: ส่ง key ไปยัง demo widget ที่ active
+		  If mPreviewFocus Then
+		    // [EN] Esc: exit preview focus, return to list navigation
+		    // [TH] Esc: ออก preview focus กลับสู่ list navigation
+		    If key.KeyCode = XjKeyEvent.KEY_ESCAPE Then
+		      mPreviewFocus = False
+		      Call mDemoInput.SetFocused(False)
+		      Call mStatusDesc.SetText(" Tab to enter preview   / search   q quit")
+		      Return
+		    End If
+
+		    // [EN] Route key to the active demo widget
+		    // [TH] ส่ง key ไปยัง demo widget ที่ active
+		    Select Case mDemoType
+		    Case "textinput"
+		      Call mDemoInput.HandleKey(key)
+		    Case "progressbar"
+		      // [EN] + / = increment; - decrement; Space reset; r reset
+		      // [TH] + / = เพิ่ม; - ลด; Space/r รีเซ็ต
+		      If key.Char = "+" Or key.Char = "=" Then
+		        Call mDemoBar.Advance(10)
+		      ElseIf key.Char = "-" Then
+		        Call mDemoBar.SetValue(mDemoBar.Value - 10)
+		      ElseIf key.Char = " " Or key.Char = "r" Then
+		        Call mDemoBar.Reset()
+		      End If
+		    Case "keyevent"
+		      // [EN] Display the received key's properties in mDemoKeyText
+		      // [TH] แสดง property ของ key ที่กดใน mDemoKeyText
+		      Var kDesc As String = "KeyCode : " + key.KeyCode.ToString
+		      kDesc = kDesc + Chr(10) + "Char    : "
+		      If key.Char <> "" Then
+		        kDesc = kDesc + "'" + key.Char + "'"
+		      Else
+		        kDesc = kDesc + "(none)"
+		      End If
+		      If key.IsCtrl Then kDesc = kDesc + Chr(10) + "Modifier: Ctrl"
+		      Call mDemoKeyText.SetText(kDesc)
+		    End Select
 		    Return
 		  End If
 
@@ -275,6 +399,19 @@ Inherits ConsoleApplication
 
 		  If key.Char = "/" Then
 		    EnterSearchMode()
+		    Return
+		  End If
+
+		  // [EN] Tab: enter preview focus (only when a live demo widget is active)
+		  // [TH] Tab: เข้า preview focus (เฉพาะเมื่อ live demo widget ทำงานอยู่)
+		  If key.KeyCode = XjKeyEvent.KEY_TAB Then
+		    If mDemoType <> "" And mDemoType <> "mockup" Then
+		      mPreviewFocus = True
+		      If mDemoType = "textinput" Then
+		        Call mDemoInput.SetFocused(True)
+		      End If
+		      Call mStatusDesc.SetText(" Esc back to list   " + DemoKeyHint(mDemoType))
+		    End If
 		    Return
 		  End If
 
@@ -322,10 +459,34 @@ Inherits ConsoleApplication
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
+		Private Function DemoKeyHint(demoType As String) As String
+		  // [EN] Return a short status-bar key hint for the active demo type.
+		  // [TH] คืน key hint สั้นๆ ใน status bar สำหรับ demo type ที่ active
+		  Select Case demoType
+		  Case "textinput"
+		    Return "Type freely"
+		  Case "progressbar"
+		    Return "+ inc   - dec   r reset"
+		  Case "spinner"
+		    Return "Animates automatically"
+		  Case "keyevent"
+		    Return "Press any key to inspect"
+		  Case Else
+		    Return ""
+		  End Select
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
 		Private Sub HandleTick(tickCount As Integer)
-		  // [EN] Called ~30fps. Drives the render cycle every frame.
-		  // [TH] ถูกเรียก ~30fps ขับเคลื่อน render cycle ทุกเฟรม
-		  #Pragma Unused tickCount
+		  // [EN] Called ~30fps. Drives render cycle and advances animated demo widgets.
+		  // [TH] ถูกเรียก ~30fps ขับเคลื่อน render cycle และ advance demo widget ที่ animate
+		  Select Case mDemoType
+		  Case "spinner"
+		    mDemoSpinnerWidget.HandleTick(tickCount)
+		  Case "progressbar"
+		    mDemoBar.HandleTick(tickCount)
+		  End Select
 		  Render()
 		End Sub
 	#tag EndMethod
@@ -451,17 +612,26 @@ Inherits ConsoleApplication
 		  Var invStyle As XjStyle = invBase.SetInverse()
 		  Call mFlatNodes(lineIdx).SetNodeStyle(invStyle)
 
-		  // [EN] Update status bar and preview widgets
-		  // [TH] อัปเดต status bar และ preview widgets
+		  // [EN] Update status bar, preview widgets, and active demo widget
+		  // [TH] อัปเดต status bar, preview widgets และ demo widget ที่ active
 		  Var entry As KSComponentEntry = mFlatEntries(lineIdx)
 		  If entry Is Nil Then
 		    Call mStatusDesc.SetText(" [" + mFlatNodes(lineIdx).Label + "] category")
 		    Call mPreviewTitle.SetText("<- select a component")
 		    Call mPreviewBody.SetText("")
 		    mPropsTable.ClearRows()
+		    ActivateDemoWidget("")
 		  Else
-		    Call mStatusDesc.SetText(" " + entry.ShortDesc)
 		    KSPreviewBuilder.LoadInto(entry, mPreviewTitle, mPreviewBody, mPropsTable)
+		    Var demoType As String = KSInteractiveLoader.DemoTypeFor(entry)
+		    ActivateDemoWidget(demoType)
+		    // [EN] Status bar: ShortDesc + Tab hint when a live demo is available
+		    // [TH] Status bar: ShortDesc + Tab hint เมื่อมี live demo
+		    If demoType <> "" And demoType <> "mockup" Then
+		      Call mStatusDesc.SetText(" " + entry.ShortDesc + "   Tab: enter demo")
+		    Else
+		      Call mStatusDesc.SetText(" " + entry.ShortDesc)
+		    End If
 		  End If
 
 		  // [EN] Scroll: mTermHeight − 11 = visible rows inside componentList
@@ -480,35 +650,47 @@ Inherits ConsoleApplication
 	#tag EndMethod
 
 
-	// [EN] mCanvas        — 2D character buffer sized to current terminal dimensions
-	// [EN] mFlatEntries   — parallel to mFlatNodes; Nil = category row, else entry
-	// [EN] mFlatNodes     — XjTreeNode references in visible tree order
-	// [EN] mListTree      — XjTree widget inside componentList panel
-	// [EN] mLoop          — 30fps event loop; owns raw mode, alternate screen, callbacks
-	// [EN] mPreviewBody   — XjText in livePreview showing long description + keywords
-	// [EN] mPreviewTitle  — XjText in livePreview showing "Name  [Category]" header
-	// [EN] mPropsTable    — XjTable in propertiesPanel; 2-column property sheet
-	// [EN] mRoot          — root of the widget tree; parent of all 4 panels
-	// [EN] mScrollOffset  — current XjTree scroll position (first visible line index)
-	// [EN] mSearchInput   — XjTextInput in searchBar; receives keys in search mode
-	// [EN] mSearchMode    — True while the user is typing in the search bar
-	// [EN] mSelectedLine  — currently highlighted flat-list index (-1 = none)
-	// [EN] mStatusDesc    — XjText in status bar; shows ShortDesc or search feedback
+	// [EN] mCanvas           — 2D character buffer sized to current terminal dimensions
+	// [EN] mDemoBar          — XjProgressBar demo; activated by ActivateDemoWidget("progressbar")
+	// [EN] mDemoInput        — XjTextInput demo; activated by ActivateDemoWidget("textinput")
+	// [EN] mDemoKeyText      — XjText demo for XjKeyEvent; shows last key code/char
+	// [EN] mDemoSpinnerWidget — XjSpinner demo; auto-advances via HandleTick
+	// [EN] mDemoType         — active demo type key ("textinput"|"progressbar"|"spinner"|"keyevent"|"mockup"|"")
+	// [EN] mFlatEntries      — parallel to mFlatNodes; Nil = category row, else entry
+	// [EN] mFlatNodes        — XjTreeNode references in visible tree order
+	// [EN] mListTree         — XjTree widget inside componentList panel
+	// [EN] mLoop             — 30fps event loop; owns raw mode, alternate screen, callbacks
+	// [EN] mPreviewBody      — XjText in livePreview showing long description + keywords
+	// [EN] mPreviewFocus     — True when Tab has moved focus into the preview demo widget
+	// [EN] mPreviewTitle     — XjText in livePreview showing "Name  [Category]" header
+	// [EN] mPropsTable       — XjTable in propertiesPanel; 2-column property sheet
+	// [EN] mRoot             — root of the widget tree; parent of all 4 panels
+	// [EN] mScrollOffset     — current XjTree scroll position (first visible line index)
+	// [EN] mSearchInput      — XjTextInput in searchBar; receives keys in search mode
+	// [EN] mSearchMode       — True while the user is typing in the search bar
+	// [EN] mSelectedLine     — currently highlighted flat-list index (-1 = none)
+	// [EN] mStatusDesc       — XjText in status bar; shows ShortDesc or search feedback
 	// [EN] mTermWidth/Height — current terminal dimensions, updated on every resize
-	// [TH] mCanvas        — บัฟเฟอร์อักขระ 2D ตรงกับขนาด terminal ปัจจุบัน
-	// [TH] mFlatEntries   — คู่ขนานกับ mFlatNodes; Nil = แถว category, มิฉะนั้น entry
-	// [TH] mFlatNodes     — อ้างอิง XjTreeNode ตามลำดับที่มองเห็นใน tree
-	// [TH] mListTree      — XjTree widget ภายใน panel componentList
-	// [TH] mLoop          — event loop 30fps; ควบคุม raw mode, alternate screen, callback
-	// [TH] mPreviewBody   — XjText ใน livePreview แสดงคำอธิบายยาว + keywords
-	// [TH] mPreviewTitle  — XjText ใน livePreview แสดง header "ชื่อ  [Category]"
-	// [TH] mPropsTable    — XjTable ใน propertiesPanel ตาราง property 2 คอลัมน์
-	// [TH] mRoot          — root ของ widget tree; parent ของ panel ทั้ง 4 ส่วน
-	// [TH] mScrollOffset  — ตำแหน่ง scroll ปัจจุบัน XjTree (index บรรทัดแรกที่มองเห็น)
-	// [TH] mSearchInput   — XjTextInput ใน searchBar; รับ key ใน search mode
-	// [TH] mSearchMode    — True ขณะผู้ใช้พิมพ์ใน search bar
-	// [TH] mSelectedLine  — index flat-list ที่ไฮไลต์อยู่ (-1 = ยังไม่เลือก)
-	// [TH] mStatusDesc    — XjText ใน status bar; แสดง ShortDesc หรือผลการค้นหา
+	// [TH] mCanvas           — บัฟเฟอร์อักขระ 2D ตรงกับขนาด terminal ปัจจุบัน
+	// [TH] mDemoBar          — demo XjProgressBar; เปิดด้วย ActivateDemoWidget("progressbar")
+	// [TH] mDemoInput        — demo XjTextInput; เปิดด้วย ActivateDemoWidget("textinput")
+	// [TH] mDemoKeyText      — demo XjText สำหรับ XjKeyEvent; แสดง key code/char ล่าสุด
+	// [TH] mDemoSpinnerWidget — demo XjSpinner; auto-advance ผ่าน HandleTick
+	// [TH] mDemoType         — demo type ที่ active ("textinput"|"progressbar"|"spinner"|"keyevent"|"mockup"|"")
+	// [TH] mFlatEntries      — คู่ขนานกับ mFlatNodes; Nil = แถว category, มิฉะนั้น entry
+	// [TH] mFlatNodes        — อ้างอิง XjTreeNode ตามลำดับที่มองเห็นใน tree
+	// [TH] mListTree         — XjTree widget ภายใน panel componentList
+	// [TH] mLoop             — event loop 30fps; ควบคุม raw mode, alternate screen, callback
+	// [TH] mPreviewBody      — XjText ใน livePreview แสดงคำอธิบายยาว + keywords
+	// [TH] mPreviewFocus     — True เมื่อ Tab ย้าย focus เข้าสู่ preview demo widget
+	// [TH] mPreviewTitle     — XjText ใน livePreview แสดง header "ชื่อ  [Category]"
+	// [TH] mPropsTable       — XjTable ใน propertiesPanel ตาราง property 2 คอลัมน์
+	// [TH] mRoot             — root ของ widget tree; parent ของ panel ทั้ง 4 ส่วน
+	// [TH] mScrollOffset     — ตำแหน่ง scroll ปัจจุบัน XjTree (index บรรทัดแรกที่มองเห็น)
+	// [TH] mSearchInput      — XjTextInput ใน searchBar; รับ key ใน search mode
+	// [TH] mSearchMode       — True ขณะผู้ใช้พิมพ์ใน search bar
+	// [TH] mSelectedLine     — index flat-list ที่ไฮไลต์อยู่ (-1 = ยังไม่เลือก)
+	// [TH] mStatusDesc       — XjText ใน status bar; แสดง ShortDesc หรือผลการค้นหา
 	// [TH] mTermWidth/Height — ขนาด terminal ปัจจุบัน อัปเดตทุกครั้งที่ resize
 	#tag Property, Flags = &h21
 		Private mCanvas As XjCanvas
@@ -527,11 +709,35 @@ Inherits ConsoleApplication
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
+		Private mDemoBar As XjProgressBar
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mDemoInput As XjTextInput
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mDemoKeyText As XjText
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mDemoSpinnerWidget As XjSpinner
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mDemoType As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
 		Private mLoop As XjEventLoop
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
 		Private mPreviewBody As XjText
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mPreviewFocus As Boolean
 	#tag EndProperty
 
 	#tag Property, Flags = &h21

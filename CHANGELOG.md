@@ -20,11 +20,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - XjBox, XjText, XjTextInput, XjTable, XjProgressBar, XjSpinner, XjTree interaction
 - XjFont (type to change), XjPie (adjust slices), XjStyle (cycle colors), XjKeyEvent (live display)
 
-### Phase 5 — Interactive Previews *(pending)*
-- Live key routing to preview widgets (focus zone 3)
-- XjBox, XjText, XjTextInput, XjTable, XjProgressBar, XjSpinner, XjTree interaction
-- XjFont (type to change), XjPie (adjust slices), XjStyle (cycle colors), XjKeyEvent (live display)
-
 ### Phase 6 — Polish *(pending)*
 - Help overlay (`?` key)
 - Category jump shortcuts (`1`–`6`)
@@ -32,6 +27,40 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Smooth animations (spinner, progress bounce)
 - Edge case handling: rapid resize, empty search, boundary values
 
+
+---
+
+## [0.6.0] — 2026-03-13
+
+### Added — Phase 5: Interactive Previews
+
+- `KSInteractiveLoader.xojo_code`: stateless module with `DemoTypeFor(entry) As String` —
+  maps interactive components to demo types: `"textinput"` | `"progressbar"` | `"spinner"` |
+  `"keyevent"` | `"mockup"` | `""`; prompt classes are blocking/modal and return `"mockup"`
+- **Three focus zones** in `KSApp.HandleKey`:
+  - **List mode** (default): `↑↓` navigate, `/` search, `Tab` enters demo (when available), `q` quit
+  - **Preview focus mode** (`mPreviewFocus=True`): keys route to active demo widget; `Esc` returns to list
+  - **Search mode** (`mSearchMode=True`): unchanged from Phase 3
+- **4 pre-built demo widgets** (all start at `Fixed(0)` height, `ActivateDemoWidget` reveals one):
+  - `mDemoInput` (XjTextInput): type freely in preview; activated by XjTextInput entry
+  - `mDemoBar` (XjProgressBar): `+`/`=` +10%, `-` −10%, `r`/Space reset; activated by XjProgressBar
+  - `mDemoSpinnerWidget` (XjSpinner): "dots" format, auto-animates via `HandleTick`; activated by XjSpinner
+  - `mDemoKeyText` (XjText, 4 rows): shows KeyCode, Char, and modifier for last key; activated by XjKeyEvent
+- `ActivateDemoWidget(demoType As String)`: collapses all 4 demo widgets, reveals matching one by swapping height constraint; resets `mPreviewFocus` on type change
+- `DemoKeyHint(demoType) As String`: returns context-sensitive key hint for status bar
+- `KitchenSink.xojo_project`: registered `KSInteractiveLoader` module
+
+### Changed
+
+- `KSApp.HandleTick`: now calls `mDemoSpinnerWidget.HandleTick` / `mDemoBar.HandleTick` before rendering when those demo types are active
+- `KSApp.SelectLine`: calls `KSInteractiveLoader.DemoTypeFor(entry)` + `ActivateDemoWidget(demoType)`; status bar appends `"   Tab: enter demo"` hint for live-demo entries
+- `KSPreviewBuilder.LoadInto`: updated interactive notice from "Phase 5 will wire..." to "Press Tab to enter the live demo panel."
+- `KSApp` class comment updated to document Phase 5 three-zone routing
+
+### Technical Note
+
+- `XjSpinner` / `XjProgressBar` require explicit `HandleTick(tickCount)` calls — the render pipeline (`mRoot.Paint`) does **not** propagate ticks to child widgets automatically.
+- Widget "show/hide" implemented via `SetHeight(Fixed(0))` / `SetHeight(Fixed(n))` — confirmed safe since `XjLayoutSolver.Solve` re-evaluates constraints every frame.
 
 ---
 

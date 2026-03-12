@@ -28,7 +28,7 @@ Protected Module KSPreviewBuilder
 		  body = body + "Keywords: " + entry.Keywords
 		  If entry.IsInteractive Then
 		    body = body + Chr(10) + Chr(10)
-		    body = body + "[ Interactive ] Phase 5 will wire live keyboard input to this component."
+		    body = body + "[ Interactive ] Press Tab to enter the live demo panel."
 		  End If
 		  Call bodyText.SetText(body)
 

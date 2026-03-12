@@ -1,6 +1,6 @@
 # CLAUDE.md — XjTTY-KitchenSink Project Context
 
-> อัปเดตโดย @documentator · 2026-03-13 (Phase 4)
+> อัปเดตโดย @documentator · 2026-03-13 (Phase 5)
 
 ---
 
@@ -65,7 +65,7 @@ This project uses a **structured multi-role agent team**. Each phase follows the
 | Phase 2 | Component Registry + Tree Navigation | ✅ Done |
 | Phase 3 | Search + Autocomplete | ✅ Done |
 | Phase 4 | Static Previews (KSPreviewBuilder + 3 preview widgets) | ✅ Done |
-| Phase 5 | Interactive Previews (15 components) | ⬜ Pending |
+| Phase 5 | Interactive Previews (Tab focus zone + 4 live demos) | ✅ Done |
 | Phase 6 | Polish (help overlay, edge cases) | ⬜ Pending |
 
 ---
@@ -79,6 +79,7 @@ KSApp.xojo_code               — App class: event loop, layout tree, key routin
 KSComponentEntry.xojo_code    — Data class: 6 public fields per component (Name, Category, ShortDesc, LongDesc, Keywords, IsInteractive)
 KSComponentRegistry.xojo_code — Module: Init() + 31 entries; Categories(), EntriesForCategory(), EntryAt(), Count(), Search()
 KSPreviewBuilder.xojo_code    — Module: stateless factory; LoadInto(entry, titleText, bodyText, propsTable) populates all 3 preview widgets
+KSInteractiveLoader.xojo_code — Module: maps entry → demo type ("textinput"|"progressbar"|"spinner"|"keyevent"|"mockup"|"")
 XjTTYLib/                     — library (read-only, 59 files)
 ```
 
@@ -102,6 +103,9 @@ Minimum terminal size: 80×24. Guard in resize handler.
 - **Search**: `KSComponentRegistry.Search(query)` uses `Instr(field.Lowercase, query.Lowercase) > 0` across Name, ShortDesc, Keywords, Category.
 - **Static preview pattern** (Phase 4): Pre-build `mPreviewTitle` (XjText, Fixed(1), cyan+bold), `mPreviewBody` (XjText, auto, wrap), and `mPropsTable` (XjTable, 2 cols, col-0 width=12) at startup. On navigation call `KSPreviewBuilder.LoadInto(entry, mPreviewTitle, mPreviewBody, mPropsTable)` — no widget rebuild needed, just update content via `SetText()` / `ClearRows()` + `AddRow()`.
 - **⚠️ No RemoveAllChildren on XjWidget/XjBox** — confirmed by reading XjWidget.xojo_code. Use persistent pre-built widgets and update content instead of swapping child widgets.
+- **Interactive demo pattern** (Phase 5): All 4 demo widgets (`mDemoInput`, `mDemoBar`, `mDemoSpinnerWidget`, `mDemoKeyText`) pre-built at startup with `SetHeight(Fixed(0))`. `ActivateDemoWidget(type)` reveals one by setting its height to a positive Fixed value; others stay at 0. Tab enters preview focus; Esc returns to list. `HandleTick` drives spinner/bar animation.
+- **Three focus zones** (Phase 5): `mSearchMode=True` → search; `mPreviewFocus=True` → live demo; default → list navigation. Tab in list mode enters preview only when `mDemoType` is a live demo type.
+- **XjSpinner / XjProgressBar tick**: Must call `widget.HandleTick(tickCount)` manually from `KSApp.HandleTick()` — the render pipeline does NOT call HandleTick on child widgets automatically.
 - **Rendering**: ~30fps via `XjEventLoop(33)`. Full clear+paint each tick.
 - **RemoveAll for arrays**: Use `.RemoveAll` to clear dynamic arrays (confirmed in XjTree source).
 
