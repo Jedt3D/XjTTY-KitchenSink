@@ -1,20 +1,19 @@
 #tag Class
 // [EN] KSApp is the application entry point. It owns the widget tree, event loop,
-//      canvas, and all top-level UI state. Other modules (Registry, PreviewBuilder,
-//      StatusBar) are stateless factories or data stores that KSApp orchestrates.
+//      canvas, and all top-level UI state. Other modules (Registry, PreviewBuilder)
+//      are stateless factories or data stores that KSApp orchestrates.
+//      Phase 3: two-mode key routing — list mode (default) and search mode.
 // [TH] KSApp คือจุดเริ่มต้นของแอปพลิเคชัน เป็นเจ้าของ widget tree, event loop,
-//      canvas และ state ระดับบนสุดทั้งหมด โมดูลอื่นๆ (Registry, PreviewBuilder,
-//      StatusBar) เป็น factory หรือ data store ที่ไม่มี state โดย KSApp เป็นตัวประสาน
+//      canvas และ state ระดับบนสุดทั้งหมด
+//      Phase 3: key routing สองโหมด — list mode (เริ่มต้น) และ search mode
 Protected Class KSApp
 Inherits ConsoleApplication
 	#tag Event
 		Function Run(args() as String) As Integer
-		  // [EN] Single entry point — called once by the Xojo runtime.
-		  //      Sequence: snapshot terminal size → create canvas → build UI tree
-		  //      → populate registry → pre-select first item → hand control to loop.
-		  // [TH] Entry point เดียว — ถูกเรียกครั้งเดียวโดย Xojo runtime
-		  //      ลำดับ: จับขนาด terminal → สร้าง canvas → สร้าง UI tree
-		  //      → ป้อนข้อมูล registry → เลือก item แรก → ส่งการควบคุมให้ loop
+		  // [EN] Single entry point. Sequence: snapshot terminal → canvas → UI tree
+		  //      → populate registry → pre-select first item → event loop.
+		  // [TH] Entry point เดียว ลำดับ: จับขนาด terminal → canvas → UI tree
+		  //      → ป้อน registry → เลือก item แรก → event loop
 		  #Pragma Unused args
 
 		  mTermWidth = XjTerminal.Width
@@ -23,12 +22,7 @@ Inherits ConsoleApplication
 
 		  BuildWidgetTree()
 		  PopulateTree()
-		  If mFlatNodes.Count > 0 Then SelectLine(0)
 
-		  // [EN] 33ms interval ≈ 30fps. AutoAlternateScreen enters fullscreen TUI mode
-		  //      and restores the normal terminal on exit automatically.
-		  // [TH] ช่วง 33ms ≈ 30fps. AutoAlternateScreen เข้าสู่โหมด fullscreen TUI
-		  //      และคืนค่า terminal ปกติเมื่อออกโดยอัตโนมัติ
 		  mLoop = New XjEventLoop(33)
 		  mLoop.AutoAlternateScreen = True
 		  mLoop.AutoHideCursor = True
@@ -43,33 +37,74 @@ Inherits ConsoleApplication
 
 
 	#tag Method, Flags = &h21
+		Private Sub ApplySearch(query As String)
+		  // [EN] Filter the component tree to entries matching query.
+		  //      Empty query shows all components. Updates status bar with match count.
+		  //      Always resets selection to the first visible item after filtering.
+		  // [TH] กรอง component tree ให้แสดงเฉพาะรายการที่ตรงกับ query
+		  //      query ว่างแสดงทั้งหมด อัปเดต status bar ด้วยจำนวนที่พบ
+		  //      รีเซ็ต selection ไปยัง item แรกเสมอหลังกรอง
+		  If query = "" Then
+		    Var allEntries() As KSComponentEntry
+		    For i As Integer = 0 To KSComponentRegistry.Count() - 1
+		      allEntries.Add(KSComponentRegistry.EntryAt(i))
+		    Next i
+		    RebuildTree(allEntries)
+		    If mFlatNodes.Count > 0 Then SelectLine(0)
+		    Call mStatusDesc.SetText(" Type to filter   Esc cancel")
+		    Return
+		  End If
+
+		  Var matches() As KSComponentEntry = KSComponentRegistry.Search(query)
+		  RebuildTree(matches)
+
+		  If mFlatNodes.Count > 0 Then
+		    SelectLine(0)
+		    Call mStatusDesc.SetText(" " + matches.Count.ToString + " of 31 match   Esc cancel")
+		  Else
+		    mSelectedLine = -1
+		    Call mStatusDesc.SetText(" No matches   Esc cancel")
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
 		Private Sub BuildWidgetTree()
-		  // [EN] Construct the 4-panel layout. Phase 2 additions: mListTree in componentList,
-		  //      mCurrentLabel in livePreview, mStatusDesc + key hint in statusBar.
+		  // [EN] Construct the 4-panel layout. Phase 3: mSearchInput embedded in searchBar.
 		  //      Layout: root(column) → header / searchBar / mainArea / statusBar
 		  //              mainArea(row) → componentList(25%) | previewArea(auto)
 		  //              previewArea(column) → livePreview(auto) / propertiesPanel(30%)
-		  // [TH] สร้างโครงสร้าง layout 4 ส่วน Phase 2 เพิ่ม: mListTree ใน componentList,
-		  //      mCurrentLabel ใน livePreview, mStatusDesc + key hint ใน statusBar
+		  // [TH] สร้างโครงสร้าง layout 4 ส่วน Phase 3: mSearchInput ฝังใน searchBar
 		  mRoot = New XjBox
 		  Call mRoot.SetDirection(XjLayoutNode.DIR_COLUMN)
 		  Call mRoot.SetBorder(0, New XjStyle)
 		  Call mRoot.SetTitle(" XjTTY-Toolkit Kitchen Sink ")
 
-		  // [EN] Header: fixed 3 rows, no border — placeholder for Phase 6 title/version bar
-		  // [TH] Header: ความสูงคงที่ 3 แถว ไม่มีขอบ — พื้นที่สำรองสำหรับ Phase 6 title/version bar
+		  // [EN] Header: fixed 3 rows, no border — Phase 6 title/version bar placeholder
+		  // [TH] Header: ความสูงคงที่ 3 แถว ไม่มีขอบ — พื้นที่สำรอง Phase 6 title/version bar
 		  Var header As New XjBox
 		  Call header.SetDirection(XjLayoutNode.DIR_ROW)
 		  Call header.SetHeight(XjConstraint.Fixed(3))
 		  mRoot.AddChild(header)
 
-		  // [EN] Search bar: fixed 3 rows, single border — Phase 3 will embed XjTextInput here
-		  // [TH] Search bar: ความสูงคงที่ 3 แถว มีขอบ — Phase 3 จะฝัง XjTextInput ที่นี่
+		  // [EN] Search bar: fixed 3 rows, single border, holds mSearchInput.
+		  //      Inner height = 1 row (3 outer − 2 border). Title acts as "mode" label.
+		  // [TH] Search bar: ความสูงคงที่ 3 แถว มีขอบ รองรับ mSearchInput
+		  //      ความสูงภายใน = 1 แถว (3 รวมขอบ − 2 ขอบ) Title แสดงโหมด
 		  Var searchBar As New XjBox
 		  Call searchBar.SetDirection(XjLayoutNode.DIR_ROW)
 		  Call searchBar.SetHeight(XjConstraint.Fixed(3))
 		  Call searchBar.SetBorder(0, New XjStyle)
+		  Call searchBar.SetTitle(" Search ")
 		  mRoot.AddChild(searchBar)
+
+		  // [EN] mSearchInput: fills the single inner row of searchBar.
+		  //      Placeholder visible when not in search mode; cursor appears on activation.
+		  // [TH] mSearchInput: เต็มพื้นที่ 1 แถวภายใน searchBar
+		  //      placeholder มองเห็นเมื่อไม่อยู่ใน search mode; cursor ปรากฏเมื่อเปิดใช้งาน
+		  mSearchInput = New XjTextInput
+		  Call mSearchInput.SetPlaceholder("Press / to search components...")
+		  searchBar.AddChild(mSearchInput)
 
 		  // [EN] Main area: fills remaining height, splits left/right via DIR_ROW
 		  // [TH] Main area: ขยายเต็มความสูงที่เหลือ แบ่งซ้าย/ขวาด้วย DIR_ROW
@@ -86,8 +121,6 @@ Inherits ConsoleApplication
 		  Call componentList.SetTitle(" Components ")
 		  mainArea.AddChild(componentList)
 
-		  // [EN] XjTree fills the componentList panel — driven by mFlatNodes / mScrollOffset
-		  // [TH] XjTree เต็มพื้นที่ componentList — ขับเคลื่อนด้วย mFlatNodes / mScrollOffset
 		  mListTree = New XjTree
 		  componentList.AddChild(mListTree)
 
@@ -99,59 +132,118 @@ Inherits ConsoleApplication
 		  Call previewArea.SetTitle(" Preview ")
 		  mainArea.AddChild(previewArea)
 
-		  // [EN] Live preview: auto height — Phase 4 will swap in KSPreviewBuilder content here
-		  // [TH] Live preview: ความสูง auto — Phase 4 จะสลับเนื้อหา KSPreviewBuilder ที่นี่
 		  Var livePreview As New XjBox
 		  Call livePreview.SetDirection(XjLayoutNode.DIR_COLUMN)
 		  previewArea.AddChild(livePreview)
 
-		  // [EN] mCurrentLabel: shows selected component name centered in livePreview
-		  // [TH] mCurrentLabel: แสดงชื่อ component ที่เลือกตรงกลาง livePreview
 		  mCurrentLabel = New XjText
 		  Call mCurrentLabel.SetText("<- select a component")
 		  Call mCurrentLabel.SetAlign(XjText.ALIGN_CENTER)
 		  livePreview.AddChild(mCurrentLabel)
 
-		  // [EN] Properties panel: 30% of preview height, min 5 rows, single border
-		  // [TH] Properties panel: 30% ของความสูง preview, ขั้นต่ำ 5 แถว, มีขอบเดี่ยว
+		  // [EN] Properties panel: 30% of preview height, min 5 rows
+		  // [TH] Properties panel: 30% ของความสูง preview, ขั้นต่ำ 5 แถว
 		  Var propertiesPanel As New XjBox
 		  Call propertiesPanel.SetHeight(XjConstraint.Percent(30).SetMin(5))
 		  Call propertiesPanel.SetBorder(0, New XjStyle)
 		  Call propertiesPanel.SetTitle(" Properties ")
 		  previewArea.AddChild(propertiesPanel)
 
-		  // [EN] Status bar: fixed 1 row, DIR_ROW — description (auto) + key hint (fixed 24)
-		  // [TH] Status bar: ความสูง 1 แถว DIR_ROW — คำอธิบาย (auto) + key hint (fixed 24)
+		  // [EN] Status bar: 1 row, DIR_ROW — description (auto) + key hint (fixed 30)
+		  // [TH] Status bar: 1 แถว DIR_ROW — คำอธิบาย (auto) + key hint (fixed 30)
 		  Var statusBar As New XjBox
 		  Call statusBar.SetDirection(XjLayoutNode.DIR_ROW)
 		  Call statusBar.SetHeight(XjConstraint.Fixed(1))
 		  mRoot.AddChild(statusBar)
 
-		  // [EN] mStatusDesc fills remaining width; updated by SelectLine on every navigation
-		  // [TH] mStatusDesc ขยายเต็มความกว้างที่เหลือ; อัปเดตโดย SelectLine ทุกครั้งที่ navigate
 		  mStatusDesc = New XjText
-		  Call mStatusDesc.SetText(" Welcome -- use arrow keys to navigate")
+		  Call mStatusDesc.SetText(" Welcome -- use arrow keys or press / to search")
 		  Call mStatusDesc.SetWidth(XjConstraint.Auto())
 		  statusBar.AddChild(mStatusDesc)
 
-		  // [EN] Key hint: right-aligned fixed-width label showing available shortcuts
-		  // [TH] Key hint: label กว้างคงที่ชิดขวา แสดง shortcut ที่ใช้ได้
 		  Var keysHint As New XjText
-		  Call keysHint.SetText("Up/Dn Navigate   q Quit")
-		  Call keysHint.SetWidth(XjConstraint.Fixed(24))
+		  Call keysHint.SetText("/ Search  Up/Dn Nav  q Quit")
+		  Call keysHint.SetWidth(XjConstraint.Fixed(30))
 		  Call keysHint.SetAlign(XjText.ALIGN_RIGHT)
 		  statusBar.AddChild(keysHint)
 		End Sub
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
+		Private Sub EnterSearchMode()
+		  // [EN] Activate search mode: clear the input, focus it, update status bar hint.
+		  // [TH] เปิด search mode: ล้าง input, โฟกัสไปที่ input, อัปเดต status bar hint
+		  mSearchMode = True
+		  Call mSearchInput.SetValue("")
+		  Call mSearchInput.SetFocused(True)
+		  Call mStatusDesc.SetText(" Type to filter   Esc cancel")
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub ExitSearchMode()
+		  // [EN] Deactivate search mode: unfocus input, restore full tree, reset selection.
+		  // [TH] ปิด search mode: ยกเลิกโฟกัส input, คืน tree เต็ม, รีเซ็ต selection
+		  mSearchMode = False
+		  Call mSearchInput.SetFocused(False)
+		  Call mSearchInput.SetValue("")
+		  PopulateTree()
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
 		Private Sub HandleKey(key As XjKeyEvent)
-		  // [EN] Global quit: 'q' (graceful) or Chr(3) = Ctrl+C (raw mode intercept).
-		  //      All other keys are forwarded to HandleListKey for navigation.
-		  // [TH] ออกจากแอปแบบ global: 'q' (ปกติ) หรือ Chr(3) = Ctrl+C (ดักจับใน raw mode)
-		  //      key อื่นๆ ทั้งหมดส่งต่อไปยัง HandleListKey สำหรับการ navigate
-		  If key.Char = "q" Or key.Char = Chr(3) Then
+		  // [EN] Two-mode key router.
+		  //      Ctrl+C always quits from either mode.
+		  //      Search mode: Esc exits; Up/Down/Enter still navigate the filtered list;
+		  //                   all other keys feed mSearchInput then trigger ApplySearch.
+		  //      List mode:   '/' enters search; 'q' quits; arrows navigate tree.
+		  // [TH] key router สองโหมด
+		  //      Ctrl+C ออกเสมอไม่ว่าจะอยู่โหมดไหน
+		  //      Search mode: Esc ออก; Up/Down/Enter ยังคง navigate; key อื่นๆ ส่งไปยัง input
+		  //      List mode: '/' เข้า search; 'q' ออก; arrow navigate tree
+
+		  // [EN] Ctrl+C always quits
+		  // [TH] Ctrl+C ออกเสมอ
+		  If key.Char = Chr(3) Then
 		    mLoop.Stop_()
+		    Return
+		  End If
+
+		  If mSearchMode Then
+		    // [EN] Esc: exit search, restore full list
+		    // [TH] Esc: ออก search, คืน list เต็ม
+		    If key.KeyCode = XjKeyEvent.KEY_ESCAPE Then
+		      ExitSearchMode()
+		      Return
+		    End If
+
+		    // [EN] Up / Down / Enter: navigate the filtered list while staying in search mode
+		    // [TH] Up / Down / Enter: navigate list ที่กรองแล้วขณะยังอยู่ใน search mode
+		    If key.KeyCode = XjKeyEvent.KEY_UP Or _
+		       key.KeyCode = XjKeyEvent.KEY_DOWN Or _
+		       key.KeyCode = XjKeyEvent.KEY_ENTER Then
+		      HandleListKey(key)
+		      Return
+		    End If
+
+		    // [EN] All other keys: feed to text input, then re-filter
+		    // [TH] key อื่นๆ ทั้งหมด: ส่งไป text input แล้วกรองใหม่
+		    If mSearchInput.HandleKey(key) Then
+		      ApplySearch(mSearchInput.Value)
+		    End If
+		    Return
+		  End If
+
+		  // [EN] List mode
+		  // [TH] List mode
+		  If key.Char = "q" Then
+		    mLoop.Stop_()
+		    Return
+		  End If
+
+		  If key.Char = "/" Then
+		    EnterSearchMode()
 		    Return
 		  End If
 
@@ -161,12 +253,8 @@ Inherits ConsoleApplication
 
 	#tag Method, Flags = &h21
 		Private Sub HandleListKey(key As XjKeyEvent)
-		  // [EN] Translate KEY_UP / KEY_DOWN / KEY_ENTER into SelectLine calls.
-		  //      Category rows (mFlatEntries = Nil) are navigable but not "selectable"
-		  //      for Phase 4 preview purposes — Enter on them is a no-op for now.
-		  // [TH] แปลง KEY_UP / KEY_DOWN / KEY_ENTER เป็นการเรียก SelectLine
-		  //      แถว category (mFlatEntries = Nil) สามารถ navigate ได้แต่ยังไม่ "select"
-		  //      สำหรับ Phase 4 preview — Enter บน category ยังไม่ทำอะไร
+		  // [EN] Arrow-key navigation within the visible (possibly filtered) component list.
+		  // [TH] navigation ด้วย arrow key ภายใน component list ที่มองเห็น (อาจกรองแล้ว)
 		  Select Case key.KeyCode
 		  Case XjKeyEvent.KEY_UP
 		    If mSelectedLine > 0 Then
@@ -179,10 +267,8 @@ Inherits ConsoleApplication
 		    End If
 
 		  Case XjKeyEvent.KEY_ENTER
-		    // [EN] Phase 4: launch KSPreviewBuilder for the selected component.
-		    //      For now, leaf selection is acknowledged via the status bar only.
-		    // [TH] Phase 4: เรียก KSPreviewBuilder สำหรับ component ที่เลือก
-		    //      ตอนนี้การเลือก leaf node แสดงผลเฉพาะใน status bar
+		    // [EN] Phase 4: launch KSPreviewBuilder. For now, acknowledge in status bar.
+		    // [TH] Phase 4: เรียก KSPreviewBuilder ตอนนี้แสดงใน status bar
 		    If mSelectedLine >= 0 And mSelectedLine < mFlatEntries.Count Then
 		      Var entry As KSComponentEntry = mFlatEntries(mSelectedLine)
 		      If Not (entry Is Nil) Then
@@ -196,10 +282,8 @@ Inherits ConsoleApplication
 
 	#tag Method, Flags = &h21
 		Private Sub HandleResize(w As Integer, h As Integer)
-		  // [EN] Resize handler: update stored dimensions and resize the canvas buffer.
-		  //      The next Render() call will re-solve the layout at the new size.
-		  // [TH] Resize handler: อัปเดตขนาดที่เก็บไว้และปรับขนาด canvas buffer
-		  //      การเรียก Render() ครั้งถัดไปจะคำนวณ layout ใหม่ตามขนาดที่เปลี่ยนไป
+		  // [EN] Update stored dimensions and resize the canvas buffer.
+		  // [TH] อัปเดตขนาดที่เก็บไว้และปรับขนาด canvas buffer
 		  mTermWidth = w
 		  mTermHeight = h
 		  mCanvas.Resize(w, h)
@@ -208,10 +292,8 @@ Inherits ConsoleApplication
 
 	#tag Method, Flags = &h21
 		Private Sub HandleTick(tickCount As Integer)
-		  // [EN] Called ~30fps by XjEventLoop. Drives the render cycle every frame.
-		  //      Animated widgets (spinners, progress bounce) will update here in Phase 5.
-		  // [TH] ถูกเรียก ~30fps โดย XjEventLoop ขับเคลื่อน render cycle ทุกเฟรม
-		  //      widget ที่มีแอนิเมชัน (spinner, progress bounce) จะอัปเดตที่นี่ใน Phase 5
+		  // [EN] Called ~30fps. Drives the render cycle every frame.
+		  // [TH] ถูกเรียก ~30fps ขับเคลื่อน render cycle ทุกเฟรม
 		  #Pragma Unused tickCount
 		  Render()
 		End Sub
@@ -219,22 +301,33 @@ Inherits ConsoleApplication
 
 	#tag Method, Flags = &h21
 		Private Sub PopulateTree()
-		  // [EN] Build the XjTree data from KSComponentRegistry and maintain two parallel
-		  //      flat arrays so KSApp can map tree line index ↔ component entry directly.
-		  //      mFlatNodes(i) = XjTreeNode for visible line i.
-		  //      mFlatEntries(i) = Nil for category headers, KSComponentEntry for leaf rows.
-		  // [TH] สร้างข้อมูล XjTree จาก KSComponentRegistry และรักษา flat array คู่ขนาน
-		  //      mFlatNodes(i) = XjTreeNode สำหรับบรรทัด i ที่มองเห็น
-		  //      mFlatEntries(i) = Nil สำหรับ category header, KSComponentEntry สำหรับ leaf
+		  // [EN] Initialise the registry and show all 31 components in the tree.
+		  //      Delegates to RebuildTree so the same builder handles filtered views too.
+		  // [TH] เริ่มต้น registry และแสดง component ทั้ง 31 รายการใน tree
+		  //      ส่งต่อไปยัง RebuildTree เพื่อให้ใช้ builder เดียวกันกับ filtered view ด้วย
 		  KSComponentRegistry.Init()
+		  Var allEntries() As KSComponentEntry
+		  For i As Integer = 0 To KSComponentRegistry.Count() - 1
+		    allEntries.Add(KSComponentRegistry.EntryAt(i))
+		  Next i
+		  RebuildTree(allEntries)
+		  If mFlatNodes.Count > 0 Then SelectLine(0)
+		End Sub
+	#tag EndMethod
 
+	#tag Method, Flags = &h21
+		Private Sub RebuildTree(entries() As KSComponentEntry)
+		  // [EN] Rebuild mFlatNodes, mFlatEntries, and the XjTree from an arbitrary slice
+		  //      of component entries. Categories with no matching entries are omitted.
+		  //      Resets mScrollOffset and mSelectedLine; caller calls SelectLine if needed.
+		  // [TH] สร้าง mFlatNodes, mFlatEntries และ XjTree ใหม่จาก entry ที่กำหนด
+		  //      หมวดหมู่ที่ไม่มี entry ที่ตรงจะถูกละเว้น
+		  //      รีเซ็ต mScrollOffset และ mSelectedLine; ผู้เรียกเรียก SelectLine ถ้าต้องการ
 		  mFlatNodes.RemoveAll
 		  mFlatEntries.RemoveAll
-		  mSelectedLine = -1
 		  mScrollOffset = 0
+		  mSelectedLine = -1
 
-		  // [EN] Category nodes styled cyan+bold; leaf nodes use XjTree default (white).
-		  // [TH] Category node ใช้สี cyan+bold; leaf node ใช้ค่าเริ่มต้นของ XjTree (ขาว)
 		  Var catBase As New XjStyle
 		  Var catWithCyan As XjStyle = catBase.SetFG(XjANSI.FG_CYAN)
 		  Var catStyle As XjStyle = catWithCyan.SetBold()
@@ -245,20 +338,34 @@ Inherits ConsoleApplication
 		  For i As Integer = 0 To cats.Count - 1
 		    Var cat As String = cats(i)
 
-		    Var catNode As New XjTreeNode(cat)
-		    Call catNode.SetNodeStyle(catStyle)
-		    mFlatNodes.Add(catNode)
-		    mFlatEntries.Add(Nil)  // category row has no component entry
-
-		    Var entries() As KSComponentEntry = KSComponentRegistry.EntriesForCategory(cat)
+		    // [EN] Collect entries that belong to this category
+		    // [TH] รวบรวม entry ที่อยู่ใน category นี้
+		    Var catEntries() As KSComponentEntry
 		    For j As Integer = 0 To entries.Count - 1
-		      Var leafNode As New XjTreeNode(entries(j).Name)
-		      Call catNode.AddChild(leafNode)
-		      mFlatNodes.Add(leafNode)
-		      mFlatEntries.Add(entries(j))
+		      If entries(j).Category = cat Then
+		        catEntries.Add(entries(j))
+		      End If
 		    Next j
 
-		    roots.Add(catNode)
+		    // [EN] Skip categories with no matching entries (relevant in search mode)
+		    // [TH] ข้าม category ที่ไม่มี entry ที่ตรง (สำคัญใน search mode)
+		    If catEntries.Count = 0 Then
+		      // nothing to add for this category
+		    Else
+		      Var catNode As New XjTreeNode(cat)
+		      Call catNode.SetNodeStyle(catStyle)
+		      mFlatNodes.Add(catNode)
+		      mFlatEntries.Add(Nil)
+
+		      For j As Integer = 0 To catEntries.Count - 1
+		        Var leafNode As New XjTreeNode(catEntries(j).Name)
+		        Call catNode.AddChild(leafNode)
+		        mFlatNodes.Add(leafNode)
+		        mFlatEntries.Add(catEntries(j))
+		      Next j
+
+		      roots.Add(catNode)
+		    End If
 		  Next i
 
 		  Call mListTree.SetData(roots)
@@ -267,18 +374,16 @@ Inherits ConsoleApplication
 
 	#tag Method, Flags = &h21
 		Private Sub Render()
-		  // [EN] Guard: if terminal is too small, skip layout and show a plain message.
-		  //      Minimum 80×24 is required for the 4-panel layout to be usable.
-		  // [TH] ตรวจสอบ: ถ้า terminal เล็กเกินไป ข้ามการคำนวณ layout และแสดงข้อความธรรมดา
-		  //      ต้องการขั้นต่ำ 80×24 เพื่อให้ layout 4 ส่วนทำงานได้
+		  // [EN] Guard: terminal smaller than 80×24 — skip layout, show plain message.
+		  // [TH] ตรวจสอบ: terminal เล็กกว่า 80×24 — ข้าม layout แสดงข้อความธรรมดา
 		  If mTermWidth < 80 Or mTermHeight < 24 Then
 		    XjScreen.Clear()
 		    XjTerminal.Write("Terminal too small (" + mTermWidth.ToString + "x" + mTermHeight.ToString + ")" + Chr(10) + "Minimum required: 80x24")
 		    Return
 		  End If
 
-		  // [EN] Render pipeline: solve layout → clear canvas → paint widget tree → flush to terminal
-		  // [TH] Render pipeline: คำนวณ layout → ล้าง canvas → วาด widget tree → ส่งออกไปยัง terminal
+		  // [EN] Render pipeline: solve layout → clear canvas → paint tree → flush
+		  // [TH] Render pipeline: คำนวณ layout → ล้าง canvas → วาด tree → ส่งออก
 		  XjLayoutSolver.Solve(mRoot.LayoutNode, mTermWidth, mTermHeight)
 		  mCanvas.Clear()
 		  mRoot.Paint(mCanvas)
@@ -288,50 +393,35 @@ Inherits ConsoleApplication
 
 	#tag Method, Flags = &h21
 		Private Sub SelectLine(lineIdx As Integer)
-		  // [EN] Move the selection cursor to lineIdx:
-		  //      1. Restore the previous node's style (cyan+bold for category, Nil for leaf).
-		  //      2. Apply inverse highlight to the new node.
-		  //      3. Update mStatusDesc and mCurrentLabel.
-		  //      4. Adjust mScrollOffset to keep the cursor within the visible window.
-		  //      5. Call SetScrollOffset to mark XjTree dirty for the next paint.
-		  // [TH] เลื่อน cursor การเลือกไปยัง lineIdx:
-		  //      1. คืนสไตล์ของ node ก่อนหน้า (cyan+bold สำหรับ category, Nil สำหรับ leaf)
-		  //      2. ใส่ inverse highlight บน node ใหม่
-		  //      3. อัปเดต mStatusDesc และ mCurrentLabel
-		  //      4. ปรับ mScrollOffset ให้ cursor อยู่ในขอบเขตที่มองเห็น
-		  //      5. เรียก SetScrollOffset เพื่อ mark XjTree dirty สำหรับการ paint ครั้งถัดไป
+		  // [EN] Move selection cursor: restore old node style → highlight new node
+		  //      → update status bar + preview label → adjust scroll → mark tree dirty.
+		  // [TH] เลื่อน cursor การเลือก: คืนสไตล์ node เก่า → ไฮไลต์ node ใหม่
+		  //      → อัปเดต status bar + preview label → ปรับ scroll → mark tree dirty
 
-		  // [EN] Step 1: restore previous node style
-		  // [TH] ขั้นที่ 1: คืนสไตล์ของ node ก่อนหน้า
+		  // [EN] Restore previous node style
+		  // [TH] คืนสไตล์ node ก่อนหน้า
 		  If mSelectedLine >= 0 And mSelectedLine < mFlatNodes.Count Then
 		    If mFlatEntries(mSelectedLine) Is Nil Then
-		      // [EN] Category header — restore cyan+bold
-		      // [TH] Category header — คืน cyan+bold
 		      Var restoreBase As New XjStyle
 		      Var restoreWithCyan As XjStyle = restoreBase.SetFG(XjANSI.FG_CYAN)
 		      Var restoreStyle As XjStyle = restoreWithCyan.SetBold()
 		      Call mFlatNodes(mSelectedLine).SetNodeStyle(restoreStyle)
 		    Else
-		      // [EN] Leaf node — restore XjTree default (Nil = use tree's mNodeStyle = white)
-		      // [TH] Leaf node — คืนค่าเริ่มต้น XjTree (Nil = ใช้ mNodeStyle ของ tree = ขาว)
 		      Call mFlatNodes(mSelectedLine).SetNodeStyle(Nil)
 		    End If
 		  End If
 
 		  mSelectedLine = lineIdx
-
-		  // [EN] Guard against out-of-range index
-		  // [TH] ป้องกัน index ที่เกินขอบเขต
 		  If lineIdx < 0 Or lineIdx >= mFlatNodes.Count Then Return
 
-		  // [EN] Step 2: highlight selected node with inverse style
-		  // [TH] ขั้นที่ 2: ไฮไลต์ node ที่เลือกด้วยสไตล์ inverse
+		  // [EN] Highlight selected node
+		  // [TH] ไฮไลต์ node ที่เลือก
 		  Var invBase As New XjStyle
 		  Var invStyle As XjStyle = invBase.SetInverse()
 		  Call mFlatNodes(lineIdx).SetNodeStyle(invStyle)
 
-		  // [EN] Step 3: update status bar description and preview label
-		  // [TH] ขั้นที่ 3: อัปเดตคำอธิบาย status bar และ preview label
+		  // [EN] Update status bar and preview label
+		  // [TH] อัปเดต status bar และ preview label
 		  Var entry As KSComponentEntry = mFlatEntries(lineIdx)
 		  If entry Is Nil Then
 		    Call mStatusDesc.SetText(" [" + mFlatNodes(lineIdx).Label + "] category")
@@ -341,10 +431,9 @@ Inherits ConsoleApplication
 		    Call mCurrentLabel.SetText(entry.Name)
 		  End If
 
-		  // [EN] Step 4: scroll to keep cursor visible.
-		  //      Visible rows = termHeight − 2(mRoot border) − 3(header) − 3(searchBar)
-		  //                              − 1(statusBar) − 2(componentList border) = termHeight − 11
-		  // [TH] ขั้นที่ 4: เลื่อน scroll เพื่อให้ cursor อยู่ในขอบเขตที่มองเห็น
+		  // [EN] Scroll: mTermHeight − 11 = visible rows inside componentList
+		  //      breakdown: mRoot border(2) + header(3) + searchBar(3) + statusBar(1) + componentList border(2)
+		  // [TH] Scroll: mTermHeight − 11 = จำนวนแถวที่มองเห็นภายใน componentList
 		  Var visibleH As Integer = mTermHeight - 11
 		  If visibleH < 1 Then visibleH = 1
 		  If lineIdx < mScrollOffset Then
@@ -353,35 +442,37 @@ Inherits ConsoleApplication
 		    mScrollOffset = lineIdx - visibleH + 1
 		  End If
 
-		  // [EN] Step 5: mark XjTree dirty via SetScrollOffset (triggers repaint next tick)
-		  // [TH] ขั้นที่ 5: mark XjTree dirty ผ่าน SetScrollOffset (trigger repaint ใน tick ถัดไป)
 		  Call mListTree.SetScrollOffset(mScrollOffset)
 		End Sub
 	#tag EndMethod
 
 
-	// [EN] mCanvas       — 2D character buffer sized to the current terminal dimensions
-	// [EN] mCurrentLabel — XjText in livePreview showing the selected component name
-	// [EN] mFlatEntries  — parallel to mFlatNodes; Nil = category row, else KSComponentEntry
-	// [EN] mFlatNodes    — XjTreeNode references in visible tree order for highlight/scroll
-	// [EN] mListTree     — XjTree widget inside componentList panel
-	// [EN] mLoop         — 30fps event loop; owns raw mode, alternate screen, and all callbacks
-	// [EN] mRoot         — root of the widget tree; parent of all 4 panels
-	// [EN] mScrollOffset — current XjTree scroll position (first visible line index)
-	// [EN] mSelectedLine — currently highlighted flat-list index (-1 = none)
-	// [EN] mStatusDesc   — XjText in status bar showing the short description on selection
-	// [EN] mTermWidth/Height — current terminal dimensions, updated on every resize event
-	// [TH] mCanvas       — บัฟเฟอร์อักขระ 2D ที่มีขนาดตรงกับ terminal ปัจจุบัน
-	// [TH] mCurrentLabel — XjText ใน livePreview แสดงชื่อ component ที่เลือก
-	// [TH] mFlatEntries  — คู่ขนานกับ mFlatNodes; Nil = แถว category, มิฉะนั้น KSComponentEntry
-	// [TH] mFlatNodes    — อ้างอิง XjTreeNode ตามลำดับที่มองเห็นใน tree สำหรับ highlight/scroll
-	// [TH] mListTree     — XjTree widget ภายใน panel componentList
-	// [TH] mLoop         — event loop 30fps; ควบคุม raw mode, alternate screen และ callback ทั้งหมด
-	// [TH] mRoot         — root ของ widget tree; parent ของ panel ทั้ง 4 ส่วน
-	// [TH] mScrollOffset — ตำแหน่ง scroll ปัจจุบันของ XjTree (index บรรทัดแรกที่มองเห็น)
-	// [TH] mSelectedLine — index flat-list ที่ไฮไลต์อยู่ (-1 = ยังไม่เลือก)
-	// [TH] mStatusDesc   — XjText ใน status bar แสดงคำอธิบายสั้นเมื่อเลือก
-	// [TH] mTermWidth/Height — ขนาด terminal ปัจจุบัน อัปเดตทุกครั้งที่มี resize event
+	// [EN] mCanvas        — 2D character buffer sized to current terminal dimensions
+	// [EN] mCurrentLabel  — XjText in livePreview showing selected component name
+	// [EN] mFlatEntries   — parallel to mFlatNodes; Nil = category row, else entry
+	// [EN] mFlatNodes     — XjTreeNode references in visible tree order
+	// [EN] mListTree      — XjTree widget inside componentList panel
+	// [EN] mLoop          — 30fps event loop; owns raw mode, alternate screen, callbacks
+	// [EN] mRoot          — root of the widget tree; parent of all 4 panels
+	// [EN] mScrollOffset  — current XjTree scroll position (first visible line index)
+	// [EN] mSearchInput   — XjTextInput in searchBar; receives keys in search mode
+	// [EN] mSearchMode    — True while the user is typing in the search bar
+	// [EN] mSelectedLine  — currently highlighted flat-list index (-1 = none)
+	// [EN] mStatusDesc    — XjText in status bar; shows ShortDesc or search feedback
+	// [EN] mTermWidth/Height — current terminal dimensions, updated on every resize
+	// [TH] mCanvas        — บัฟเฟอร์อักขระ 2D ตรงกับขนาด terminal ปัจจุบัน
+	// [TH] mCurrentLabel  — XjText ใน livePreview แสดงชื่อ component ที่เลือก
+	// [TH] mFlatEntries   — คู่ขนานกับ mFlatNodes; Nil = แถว category, มิฉะนั้น entry
+	// [TH] mFlatNodes     — อ้างอิง XjTreeNode ตามลำดับที่มองเห็นใน tree
+	// [TH] mListTree      — XjTree widget ภายใน panel componentList
+	// [TH] mLoop          — event loop 30fps; ควบคุม raw mode, alternate screen, callback
+	// [TH] mRoot          — root ของ widget tree; parent ของ panel ทั้ง 4 ส่วน
+	// [TH] mScrollOffset  — ตำแหน่ง scroll ปัจจุบัน XjTree (index บรรทัดแรกที่มองเห็น)
+	// [TH] mSearchInput   — XjTextInput ใน searchBar; รับ key ใน search mode
+	// [TH] mSearchMode    — True ขณะผู้ใช้พิมพ์ใน search bar
+	// [TH] mSelectedLine  — index flat-list ที่ไฮไลต์อยู่ (-1 = ยังไม่เลือก)
+	// [TH] mStatusDesc    — XjText ใน status bar; แสดง ShortDesc หรือผลการค้นหา
+	// [TH] mTermWidth/Height — ขนาด terminal ปัจจุบัน อัปเดตทุกครั้งที่ resize
 	#tag Property, Flags = &h21
 		Private mCanvas As XjCanvas
 	#tag EndProperty
@@ -412,6 +503,14 @@ Inherits ConsoleApplication
 
 	#tag Property, Flags = &h21
 		Private mScrollOffset As Integer
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mSearchInput As XjTextInput
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mSearchMode As Boolean
 	#tag EndProperty
 
 	#tag Property, Flags = &h21

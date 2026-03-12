@@ -26,11 +26,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reference cards: XjCanvas, XjEventLoop, XjConstraint, XjLayoutNode, XjLayoutSolver
 - Properties table populated per component
 
-### Phase 3 — Search *(pending)*
-- XjTextInput wired with XjCompleter (component names + keywords)
-- Real-time search filtering in registry
-- Tree filters to matching entries only
-- `/` shortcut to jump to search, Esc to clear
+
+---
+
+## [0.4.0] — 2026-03-13
+
+### Added — Phase 3: Search
+
+- `KSComponentRegistry.Search(query As String) As KSComponentEntry()` — case-insensitive
+  substring match across Name, ShortDesc, Keywords, and Category fields; empty query
+  returns empty array (caller decides display behaviour)
+- `KSApp.mSearchInput` (XjTextInput) embedded in searchBar panel with placeholder
+  "Press / to search components..."
+- Two-mode key routing in `KSApp.HandleKey`:
+  - **List mode** (default): `↑↓` navigate tree, `/` activates search, `q`/Ctrl+C quit
+  - **Search mode**: printable keys feed `mSearchInput`; `↑↓`/Enter still navigate the
+    filtered list; `Esc` exits search and restores the full component tree
+- `KSApp.ApplySearch(query)` — live tree filtering; status bar shows "N of 31 match"
+  or "No matches"; empty categories hidden automatically
+- `KSApp.EnterSearchMode()` / `ExitSearchMode()` — XjTextInput focus lifecycle
+- `KSApp.RebuildTree(entries() As KSComponentEntry)` — shared tree builder extracted
+  from `PopulateTree()`; eliminates duplicate tree-construction logic; skips categories
+  with no matching entries
+
+### Changed
+
+- `KSApp.PopulateTree()` refactored to delegate to `RebuildTree(allEntries)` rather than
+  building the tree inline — single code path for both full and filtered views
+- searchBar `SetTitle(" Search ")` added so the border panel is labelled
 
 ---
 

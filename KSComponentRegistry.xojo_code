@@ -54,6 +54,30 @@ Protected Module KSComponentRegistry
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
+		Function Search(query As String) As KSComponentEntry()
+		  // [EN] Case-insensitive substring search across Name, Category, ShortDesc, and Keywords.
+		  //      Empty query returns an empty result (caller decides what to show).
+		  // [TH] ค้นหาแบบ substring ไม่คำนึงตัวพิมพ์เล็ก/ใหญ่ ครอบคลุม Name, Category, ShortDesc, Keywords
+		  //      query ว่างเปล่าคืน array ว่าง (ผู้เรียกตัดสินใจว่าจะแสดงอะไร)
+		  Init
+		  Var result() As KSComponentEntry
+		  If query = "" Then Return result
+
+		  Var q As String = query.Lowercase
+		  For i As Integer = 0 To mEntries.Count - 1
+		    Var e As KSComponentEntry = mEntries(i)
+		    If Instr(e.Name.Lowercase, q) > 0 Or _
+		       Instr(e.ShortDesc.Lowercase, q) > 0 Or _
+		       Instr(e.Keywords.Lowercase, q) > 0 Or _
+		       Instr(e.Category.Lowercase, q) > 0 Then
+		      result.Add(e)
+		    End If
+		  Next i
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h0
 		Function EntryAt(i As Integer) As KSComponentEntry
 		  // [EN] Return entry at flat index i, or Nil if out of range.
 		  // [TH] คืน entry ที่ index i หรือ Nil ถ้าเกินขอบเขต

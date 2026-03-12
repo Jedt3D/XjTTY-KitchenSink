@@ -1,6 +1,6 @@
 # CLAUDE.md — XjTTY-KitchenSink Project Context
 
-> อัปเดตโดย @documentator · 2026-03-13 (Phase 2)
+> อัปเดตโดย @documentator · 2026-03-13 (Phase 3)
 
 ---
 
@@ -63,7 +63,7 @@ This project uses a **structured multi-role agent team**. Each phase follows the
 | Scaffold | KSApp rename, XjTTYLib attached to project | ✅ Done |
 | Phase 1 | Skeleton (layout shell, event loop) | ✅ Done |
 | Phase 2 | Component Registry + Tree Navigation | ✅ Done |
-| Phase 3 | Search + Autocomplete | ⬜ Pending |
+| Phase 3 | Search + Autocomplete | ✅ Done |
 | Phase 4 | Static Previews (29 components) | ⬜ Pending |
 | Phase 5 | Interactive Previews (15 components) | ⬜ Pending |
 | Phase 6 | Polish (help overlay, edge cases) | ⬜ Pending |
@@ -77,7 +77,7 @@ This project uses a **structured multi-role agent team**. Each phase follows the
 KitchenSink.xojo_project      — console app project file
 KSApp.xojo_code               — App class: event loop, layout tree, key routing, tree navigation
 KSComponentEntry.xojo_code    — Data class: 6 public fields per component (Name, Category, ShortDesc, LongDesc, Keywords, IsInteractive)
-KSComponentRegistry.xojo_code — Module: Init() + 31 entries; Categories(), EntriesForCategory(), EntryAt(), Count()
+KSComponentRegistry.xojo_code — Module: Init() + 31 entries; Categories(), EntriesForCategory(), EntryAt(), Count(), Search()
 XjTTYLib/                     — library (read-only, 59 files)
 ```
 **Planned (Phase 4+):** `KSPreviewBuilder.xojo_code`
@@ -96,8 +96,11 @@ Minimum terminal size: 80×24. Guard in resize handler.
 - **Tree highlight**: Change `node.SetNodeStyle(...)` then call `mListTree.SetScrollOffset(mScrollOffset)` to mark XjTree dirty — no rebuild needed.
 - **Scroll visible height**: `mTermHeight - 11` (not `-9`). Breakdown: mRoot border(2) + header(3) + searchBar(3) + statusBar(1) + componentList border(2) = 11.
 - **Registry Init guard**: `KSComponentRegistry.mInitialized` prevents double-population. Call `Init()` freely; it no-ops after first call.
+- **Two-mode key routing**: `mSearchMode As Boolean` in KSApp. List mode: `↑↓` navigate, `/` activates search, `q` quits. Search mode: printable keys → `mSearchInput.HandleKey()` → `ApplySearch()`; `↑↓` still navigate filtered list; `Esc` restores full tree.
+- **Shared tree builder**: `RebuildTree(entries() As KSComponentEntry)` is called by both `PopulateTree()` (all 31) and `ApplySearch()` (filtered subset). Categories with no matching entries are omitted automatically.
+- **XjTextInput focus**: Call `SetFocused(True)` before routing keys to XjTextInput — it returns False without processing if `mFocused = False`.
+- **Search**: `KSComponentRegistry.Search(query)` uses `Instr(field.Lowercase, query.Lowercase) > 0` across Name, ShortDesc, Keywords, Category.
 - **Preview swapping** (Phase 4): `livePreview.RemoveAllChildren()` → `BuildPreview(entry)` → `livePreview.AddChild(preview)`
-- **Focus cycle** (Phase 5): `XjFocusManager` chains: searchInput → listTree → previewArea
 - **Rendering**: ~30fps via `XjEventLoop(33)`. Full clear+paint each tick.
 - **RemoveAll for arrays**: Use `.RemoveAll` to clear dynamic arrays (confirmed in XjTree source).
 
