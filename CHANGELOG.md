@@ -30,6 +30,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.6.1] — 2026-03-13
+
+### Fixed — Search Mode UX
+
+- **Tab from search mode**: pressing `Tab` while the search input is active now exits
+  search mode first (calls `ExitSearchMode()`), then falls through to list-mode Tab
+  handling — entering the preview demo widget in one keypress instead of requiring
+  `Esc` then `Tab`
+- **Selection preserved on search exit**: `ExitSearchMode()` now saves the currently
+  selected `KSComponentEntry` before `PopulateTree()` rebuilds the full tree, then
+  finds and re-selects it by name; applies to both `Esc` and `Tab` exits; falls back
+  to line 0 only if no entry was selected or a category header was active
+
+---
+
 ## [0.6.0] — 2026-03-13
 
 ### Added — Phase 5: Interactive Previews

@@ -105,6 +105,8 @@ Minimum terminal size: 80×24. Guard in resize handler.
 - **⚠️ No RemoveAllChildren on XjWidget/XjBox** — confirmed by reading XjWidget.xojo_code. Use persistent pre-built widgets and update content instead of swapping child widgets.
 - **Interactive demo pattern** (Phase 5): All 4 demo widgets (`mDemoInput`, `mDemoBar`, `mDemoSpinnerWidget`, `mDemoKeyText`) pre-built at startup with `SetHeight(Fixed(0))`. `ActivateDemoWidget(type)` reveals one by setting its height to a positive Fixed value; others stay at 0. Tab enters preview focus; Esc returns to list. `HandleTick` drives spinner/bar animation.
 - **Three focus zones** (Phase 5): `mSearchMode=True` → search; `mPreviewFocus=True` → live demo; default → list navigation. Tab in list mode enters preview only when `mDemoType` is a live demo type.
+- **Tab from search mode**: Tab in search mode calls `ExitSearchMode()` then falls through to list-mode Tab handling — no need to Esc first.
+- **ExitSearchMode preserves selection**: saves `mFlatEntries(mSelectedLine)` before `PopulateTree()`, then finds and re-selects it by name in the rebuilt tree. Falls back to line 0 if nothing was selected or a category header was active.
 - **XjSpinner / XjProgressBar tick**: Must call `widget.HandleTick(tickCount)` manually from `KSApp.HandleTick()` — the render pipeline does NOT call HandleTick on child widgets automatically.
 - **Rendering**: ~30fps via `XjEventLoop(33)`. Full clear+paint each tick.
 - **RemoveAll for arrays**: Use `.RemoveAll` to clear dynamic arrays (confirmed in XjTree source).

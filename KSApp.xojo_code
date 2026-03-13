@@ -292,12 +292,37 @@ Inherits ConsoleApplication
 
 	#tag Method, Flags = &h21
 		Private Sub ExitSearchMode()
-		  // [EN] Deactivate search mode: unfocus input, restore full tree, reset selection.
-		  // [TH] ปิด search mode: ยกเลิกโฟกัส input, คืน tree เต็ม, รีเซ็ต selection
+		  // [EN] Deactivate search mode: unfocus input, restore full tree, then re-select
+		  //      the previously selected entry so the cursor does not jump to line 0.
+		  //      If the selected line was a category header (Nil entry), line 0 is used.
+		  // [TH] ปิด search mode: ยกเลิกโฟกัส input, คืน tree เต็ม แล้ว re-select
+		  //      entry ที่เคยเลือกไว้ ป้องกันไม่ให้กระโดดไปบรรทัดแรก
+		  //      ถ้า line ที่เลือกเป็น category header (Nil) ให้ใช้บรรทัดแรกแทน
+
+		  // [EN] Save the selected component entry before the tree is rebuilt
+		  // [TH] บันทึก entry ที่เลือกก่อนที่ tree จะถูกสร้างใหม่
+		  Var savedEntry As KSComponentEntry
+		  If mSelectedLine >= 0 And mSelectedLine < mFlatEntries.Count Then
+		    savedEntry = mFlatEntries(mSelectedLine)
+		  End If
+
 		  mSearchMode = False
 		  Call mSearchInput.SetFocused(False)
 		  Call mSearchInput.SetValue("")
 		  PopulateTree()
+
+		  // [EN] Re-select the saved entry in the restored full list
+		  // [TH] Re-select entry ที่บันทึกไว้ในรายการ tree เต็มที่กู้คืนแล้ว
+		  If Not (savedEntry Is Nil) Then
+		    For i As Integer = 0 To mFlatEntries.Count - 1
+		      If Not (mFlatEntries(i) Is Nil) Then
+		        If mFlatEntries(i).Name = savedEntry.Name Then
+		          SelectLine(i)
+		          Return
+		        End If
+		      End If
+		    Next i
+		  End If
 		End Sub
 	#tag EndMethod
 
@@ -382,12 +407,19 @@ Inherits ConsoleApplication
 		      Return
 		    End If
 
-		    // [EN] All other keys: feed to text input, then re-filter
-		    // [TH] key อื่นๆ ทั้งหมด: ส่งไป text input แล้วกรองใหม่
-		    If mSearchInput.HandleKey(key) Then
-		      ApplySearch(mSearchInput.Value)
+		    // [EN] Tab: exit search first, then fall through to list-mode Tab handling below
+		    // [TH] Tab: ออก search ก่อน แล้วต่อไปยัง Tab handling ของ list mode ด้านล่าง
+		    If key.KeyCode = XjKeyEvent.KEY_TAB Then
+		      ExitSearchMode()
+		      // fall through — no Return
+		    Else
+		      // [EN] All other keys: feed to text input, then re-filter
+		      // [TH] key อื่นๆ ทั้งหมด: ส่งไป text input แล้วกรองใหม่
+		      If mSearchInput.HandleKey(key) Then
+		        ApplySearch(mSearchInput.Value)
+		      End If
+		      Return
 		    End If
-		    Return
 		  End If
 
 		  // [EN] List mode
