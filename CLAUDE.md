@@ -1,6 +1,6 @@
 # CLAUDE.md — XjTTY-KitchenSink Project Context
 
-> อัปเดตโดย @documentator · 2026-03-13 (Phase 5)
+> อัปเดตโดย @documentator · 2026-03-13 (Phase 6)
 
 ---
 
@@ -9,7 +9,7 @@
 **XjTTY-KitchenSink** is a fullscreen TUI console application (Xojo) that showcases all 31 components in the **XjTTY-Toolkit** library. It serves as an interactive browser, live-demo tool, and reference for developers learning the toolkit.
 
 - Library lives in: `XjTTYLib/` (59 `.xojo_code` files — do NOT modify)
-- App source files: `KSApp`, `KSComponentEntry`, `KSComponentRegistry`, `KSPreviewBuilder` (Phase 4)
+- App source files: `KSApp`, `KSComponentEntry`, `KSComponentRegistry`, `KSPreviewBuilder`, `KSInteractiveLoader`
 - Spec: `KITCHEN_SINK_PROPOSAL.md`
 
 ---
@@ -66,7 +66,7 @@ This project uses a **structured multi-role agent team**. Each phase follows the
 | Phase 3 | Search + Autocomplete | ✅ Done |
 | Phase 4 | Static Previews (KSPreviewBuilder + 3 preview widgets) | ✅ Done |
 | Phase 5 | Interactive Previews (Tab focus zone + 4 live demos) | ✅ Done |
-| Phase 6 | Polish (help overlay, edge cases) | ⬜ Pending |
+| Phase 6 | Polish (help overlay, category jump, PgUp/Dn, Home/End) | ✅ Done |
 
 ---
 
@@ -109,6 +109,9 @@ Minimum terminal size: 80×24. Guard in resize handler.
 - **Tab from search mode**: Tab in search mode calls `ExitSearchMode()` then falls through to list-mode Tab handling — no need to Esc first.
 - **ExitSearchMode preserves selection**: saves `mFlatEntries(mSelectedLine)` before `PopulateTree()`, then finds and re-selects it by name in the rebuilt tree. Falls back to line 0 if nothing was selected or a category header was active.
 - **XjSpinner / XjProgressBar tick**: Must call `widget.HandleTick(tickCount)` manually from `KSApp.HandleTick()` — the render pipeline does NOT call HandleTick on child widgets automatically.
+- **Help overlay** (Phase 6): `mShowHelp As Boolean`. When True, `HandleTick` calls `RenderHelp()` instead of `Render()`. `RenderHelp()` calls `Render()` first (normal UI), then writes a centered box on top using ANSI cursor positioning (`ESC[row;colH`). Any key dismisses it (checked at top of `HandleKey` before all mode blocks). No widget-tree changes needed.
+- **Category jump** (Phase 6): `1`–`6` keys scan `mFlatEntries` for Nil entries (category headers) in order, jumping to the Nth one via `SelectLine()`. Uses `Val(key.Char) - 1` as the 0-based index.
+- **Page Up/Down, Home/End** (Phase 6): Added as new `Case` blocks in `HandleListKey`. Page size = `mTermHeight - 11` (same visible-height formula used by scroll).
 - **Rendering**: ~30fps via `XjEventLoop(33)`. Full clear+paint each tick.
 - **RemoveAll for arrays**: Use `.RemoveAll` to clear dynamic arrays (confirmed in XjTree source).
 

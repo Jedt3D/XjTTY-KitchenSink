@@ -8,25 +8,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-### Phase 6 — Polish *(pending)*
-- Help overlay (`?` key)
-- Category jump shortcuts (`1`–`6`)
-- Page Up/Down, Home/End in component list
-- Smooth animations (spinner, progress bounce)
-- Edge case handling: rapid resize, empty search, boundary values
+*(all planned phases complete)*
 
-### Phase 5 — Interactive Previews *(pending)*
-- Live key routing to preview widgets (focus zone 3)
-- XjBox, XjText, XjTextInput, XjTable, XjProgressBar, XjSpinner, XjTree interaction
-- XjFont (type to change), XjPie (adjust slices), XjStyle (cycle colors), XjKeyEvent (live display)
+---
 
-### Phase 6 — Polish *(pending)*
-- Help overlay (`?` key)
-- Category jump shortcuts (`1`–`6`)
-- Page Up/Down, Home/End in component list
-- Smooth animations (spinner, progress bounce)
-- Edge case handling: rapid resize, empty search, boundary values
+## [0.7.0] — 2026-03-13
 
+### Added — Phase 6: Polish
+
+- **Help overlay** (`?` key): centered cyan-bordered box drawn directly on top of the
+  running UI using ANSI cursor positioning (`ESC[row;colH`). Lists all keyboard shortcuts.
+  Any key press dismisses it. `mShowHelp As Boolean` tracks state; `RenderHelp()` method
+  calls `Render()` first then overlays the box without touching the widget tree.
+- **Category jump** (`1`–`6`): pressing a digit key jumps directly to the first node of
+  that category header in the component list. Scans `mFlatEntries` for Nil entries (category
+  rows) and calls `SelectLine(i)` on the Nth match. Works in list mode only.
+- **Page Up / Page Down**: scroll the component list by one visible page
+  (`mTermHeight - 11` rows). Added as `KEY_PAGEUP` / `KEY_PAGEDOWN` cases in `HandleListKey`.
+- **Home / End**: jump to the first or last item in the component list.
+  Added as `KEY_HOME` / `KEY_END_` cases in `HandleListKey`.
+- **keysHint updated**: status bar right-side hint now reads
+  `"/ Search  Up/Dn  ?Help  q Quit"` (width adjusted from 30 → 32)
 
 ---
 

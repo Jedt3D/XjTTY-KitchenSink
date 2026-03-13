@@ -7,6 +7,8 @@
 //               mPreviewBody, and mPropsTable on every navigation step.
 //      Phase 5: interactive previews — three focus zones; Tab enters the live demo
 //               widget in the preview panel; Esc returns to list navigation.
+//      Phase 6: polish — help overlay (? key), category jump (1–6),
+//               Page Up/Down, Home/End in component list.
 // [TH] KSApp คือจุดเริ่มต้นของแอปพลิเคชัน เป็นเจ้าของ widget tree, event loop,
 //      canvas และ state ระดับบนสุดทั้งหมด
 //      Phase 3: key routing สองโหมด — list mode (เริ่มต้น) และ search mode
@@ -14,6 +16,8 @@
 //               mPreviewBody และ mPropsTable ทุกครั้งที่ navigate
 //      Phase 5: interactive previews — 3 focus zones; Tab เข้า live demo widget
 //               ใน preview panel; Esc กลับสู่ list navigation
+//      Phase 6: polish — help overlay (? key), category jump (1–6),
+//               PgUp/PgDn/Home/End ใน component list
 Protected Class KSApp
 Inherits ConsoleApplication
 	#tag Event
@@ -279,8 +283,8 @@ Inherits ConsoleApplication
 		  statusBar.AddChild(mStatusDesc)
 
 		  Var keysHint As New XjText
-		  Call keysHint.SetText("/ Search  Up/Dn Nav  q Quit")
-		  Call keysHint.SetWidth(XjConstraint.Fixed(30))
+		  Call keysHint.SetText("/ Search  Up/Dn  ?Help  q Quit")
+		  Call keysHint.SetWidth(XjConstraint.Fixed(32))
 		  Call keysHint.SetAlign(XjText.ALIGN_RIGHT)
 		  Call keysHint.SetStyle(dimHint)
 		  statusBar.AddChild(keysHint)
@@ -352,6 +356,13 @@ Inherits ConsoleApplication
 		  // [TH] Ctrl+C ออกเสมอ
 		  If key.Char = Chr(3) Then
 		    mLoop.Stop_()
+		    Return
+		  End If
+
+		  // [EN] Help overlay: any key press dismisses it
+		  // [TH] Help overlay: กด key ใดๆ เพื่อปิด
+		  If mShowHelp Then
+		    mShowHelp = False
 		    Return
 		  End If
 
@@ -455,6 +466,30 @@ Inherits ConsoleApplication
 		    Return
 		  End If
 
+		  // [EN] ? key: show help overlay
+		  // [TH] ? key: แสดง help overlay
+		  If key.Char = "?" Then
+		    mShowHelp = True
+		    Return
+		  End If
+
+		  // [EN] 1–6: jump to the Nth category header in the component list
+		  // [TH] 1–6: กระโดดไปยัง category header ที่ N ใน component list
+		  If key.Char >= "1" And key.Char <= "6" Then
+		    Var catIdx As Integer = Val(key.Char) - 1
+		    Var catCount As Integer = -1
+		    For i As Integer = 0 To mFlatNodes.Count - 1
+		      If mFlatEntries(i) Is Nil Then
+		        catCount = catCount + 1
+		        If catCount = catIdx Then
+		          SelectLine(i)
+		          Return
+		        End If
+		      End If
+		    Next i
+		    Return
+		  End If
+
 		  HandleListKey(key)
 		End Sub
 	#tag EndMethod
@@ -483,6 +518,34 @@ Inherits ConsoleApplication
 		        Call mStatusDesc.SetText(" [selected] " + entry.Name + " — " + entry.ShortDesc)
 		      End If
 		    End If
+
+		  Case XjKeyEvent.KEY_PAGEUP
+		    // [EN] Page Up: scroll up one visible page
+		    // [TH] Page Up: เลื่อนขึ้นหนึ่งหน้า
+		    Var visH As Integer = mTermHeight - 11
+		    If visH < 1 Then visH = 1
+		    Var pgUpLine As Integer = mSelectedLine - visH
+		    If pgUpLine < 0 Then pgUpLine = 0
+		    SelectLine(pgUpLine)
+
+		  Case XjKeyEvent.KEY_PAGEDOWN
+		    // [EN] Page Down: scroll down one visible page
+		    // [TH] Page Down: เลื่อนลงหนึ่งหน้า
+		    Var visH2 As Integer = mTermHeight - 11
+		    If visH2 < 1 Then visH2 = 1
+		    Var pgDnLine As Integer = mSelectedLine + visH2
+		    If pgDnLine >= mFlatNodes.Count Then pgDnLine = mFlatNodes.Count - 1
+		    SelectLine(pgDnLine)
+
+		  Case XjKeyEvent.KEY_HOME
+		    // [EN] Home: jump to first item
+		    // [TH] Home: กระโดดไปรายการแรก
+		    If mFlatNodes.Count > 0 Then SelectLine(0)
+
+		  Case XjKeyEvent.KEY_END_
+		    // [EN] End: jump to last item
+		    // [TH] End: กระโดดไปรายการสุดท้าย
+		    If mFlatNodes.Count > 0 Then SelectLine(mFlatNodes.Count - 1)
 
 		  End Select
 		End Sub
@@ -520,7 +583,13 @@ Inherits ConsoleApplication
 	#tag Method, Flags = &h21
 		Private Sub HandleTick(tickCount As Integer)
 		  // [EN] Called ~30fps. Drives render cycle and advances animated demo widgets.
+		  //      When the help overlay is active, calls RenderHelp() instead of Render().
 		  // [TH] ถูกเรียก ~30fps ขับเคลื่อน render cycle และ advance demo widget ที่ animate
+		  //      เมื่อ help overlay เปิดอยู่ เรียก RenderHelp() แทน Render()
+		  If mShowHelp Then
+		    RenderHelp()
+		    Return
+		  End If
 		  Select Case mDemoType
 		  Case "spinner"
 		    mDemoSpinnerWidget.HandleTick(tickCount)
@@ -624,6 +693,92 @@ Inherits ConsoleApplication
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
+		Private Sub RenderHelp()
+		  // [EN] Render the normal UI first, then draw a centered help overlay on top.
+		  //      Uses ANSI cursor positioning (ESC[row;colH) to write the box without
+		  //      touching the widget tree. Any key press dismisses it (see HandleKey).
+		  // [TH] Render UI ปกติก่อน แล้ววาด help overlay ตรงกลางทับด้านบน
+		  //      ใช้ ANSI cursor positioning วาดกล่องโดยไม่แตะ widget tree
+		  //      กด key ใดๆ เพื่อปิด (ดู HandleKey)
+		  Render()
+
+		  Var inner As Integer = 38
+		  Var boxH As Integer = 15
+		  Var startCol As Integer = (mTermWidth - inner - 2) \ 2 + 1
+		  Var startRow As Integer = (mTermHeight - boxH) \ 2 + 1
+		  If startCol < 1 Then startCol = 1
+		  If startRow < 1 Then startRow = 1
+
+		  Var esc As String = Chr(27)
+		  Var CYAN As String = esc + "[36m"
+		  Var BOLD As String = esc + "[1m"
+		  Var DIM As String = esc + "[90m"
+		  Var RST As String = esc + "[0m"
+
+		  // [EN] Horizontal border: inner dashes
+		  // [TH] เส้นขอบแนวนอน: ขีดกลาง inner ตัว
+		  Var hbar As String = ""
+		  For k As Integer = 1 To inner
+		    hbar = hbar + "-"
+		  Next k
+
+		  // [EN] Build the complete overlay output string
+		  // [TH] สร้าง string output ของ overlay ทั้งหมด
+		  Var out As String = ""
+
+		  // Top border
+		  out = out + esc + "[" + startRow.ToString + ";" + startCol.ToString + "H"
+		  out = out + CYAN + "+" + hbar + "+" + RST
+
+		  // Title row
+		  Var titleContent As String = "          Keyboard Shortcuts          "
+		  out = out + esc + "[" + (startRow + 1).ToString + ";" + startCol.ToString + "H"
+		  out = out + CYAN + "|" + RST + BOLD + titleContent + RST + CYAN + "|" + RST
+
+		  // Separator
+		  out = out + esc + "[" + (startRow + 2).ToString + ";" + startCol.ToString + "H"
+		  out = out + CYAN + "+" + hbar + "+" + RST
+
+		  // Key binding rows — each padded to exactly inner chars
+		  Var bases() As String
+		  bases.Add("  /         Search components")
+		  bases.Add("  Up/Dn     Navigate list")
+		  bases.Add("  1-6       Jump to category")
+		  bases.Add("  PgUp/Dn   Scroll by page")
+		  bases.Add("  Home/End  First / last item")
+		  bases.Add("  Tab       Enter live demo")
+		  bases.Add("  Esc       Back to list")
+		  bases.Add("  ?         Toggle this help")
+		  bases.Add("  q         Quit")
+		  bases.Add("")
+
+		  For i As Integer = 0 To bases.Count - 1
+		    Var row As String = bases(i)
+		    While row.Length < inner
+		      row = row + " "
+		    Wend
+		    out = out + esc + "[" + (startRow + 3 + i).ToString + ";" + startCol.ToString + "H"
+		    out = out + CYAN + "|" + RST + row + CYAN + "|" + RST
+		  Next i
+
+		  // Hint row
+		  Var hintRow As Integer = startRow + 3 + bases.Count
+		  Var hintStr As String = "        Press any key to close"
+		  While hintStr.Length < inner
+		    hintStr = hintStr + " "
+		  Wend
+		  out = out + esc + "[" + hintRow.ToString + ";" + startCol.ToString + "H"
+		  out = out + CYAN + "|" + RST + DIM + hintStr + RST + CYAN + "|" + RST
+
+		  // Bottom border
+		  out = out + esc + "[" + (hintRow + 1).ToString + ";" + startCol.ToString + "H"
+		  out = out + CYAN + "+" + hbar + "+" + RST
+
+		  XjTerminal.Write(out)
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
 		Private Sub SelectLine(lineIdx As Integer)
 		  // [EN] Move selection cursor: restore old node style → highlight new node
 		  //      → update status bar + preview label → adjust scroll → mark tree dirty.
@@ -710,6 +865,7 @@ Inherits ConsoleApplication
 	// [EN] mSearchInput      — XjTextInput in searchBar; receives keys in search mode
 	// [EN] mSearchMode       — True while the user is typing in the search bar
 	// [EN] mSelectedLine     — currently highlighted flat-list index (-1 = none)
+	// [EN] mShowHelp         — True while help overlay is displayed; any key press dismisses it
 	// [EN] mStatusDesc       — XjText in status bar; shows ShortDesc or search feedback
 	// [EN] mTermWidth/Height — current terminal dimensions, updated on every resize
 	// [TH] mCanvas           — บัฟเฟอร์อักขระ 2D ตรงกับขนาด terminal ปัจจุบัน
@@ -731,6 +887,7 @@ Inherits ConsoleApplication
 	// [TH] mSearchInput      — XjTextInput ใน searchBar; รับ key ใน search mode
 	// [TH] mSearchMode       — True ขณะผู้ใช้พิมพ์ใน search bar
 	// [TH] mSelectedLine     — index flat-list ที่ไฮไลต์อยู่ (-1 = ยังไม่เลือก)
+	// [TH] mShowHelp         — True ขณะ help overlay แสดงอยู่; กด key ใดๆ เพื่อปิด
 	// [TH] mStatusDesc       — XjText ใน status bar; แสดง ShortDesc หรือผลการค้นหา
 	// [TH] mTermWidth/Height — ขนาด terminal ปัจจุบัน อัปเดตทุกครั้งที่ resize
 	#tag Property, Flags = &h21
@@ -803,6 +960,10 @@ Inherits ConsoleApplication
 
 	#tag Property, Flags = &h21
 		Private mSearchMode As Boolean
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mShowHelp As Boolean
 	#tag EndProperty
 
 	#tag Property, Flags = &h21
