@@ -30,6 +30,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.6.2] — 2026-03-13
+
+### Changed — btop-Inspired Color Theme
+
+- **Panel borders**: all five `SetBorder` calls now use `cyanBorder` (`FG_CYAN`) —
+  root, searchBar, componentList, previewArea, propertiesPanel frames are now teal,
+  matching btop's muted teal box-drawing aesthetic
+- **Selected list item**: highlight changed from `SetInverse()` to
+  `BG_MAGENTA + FG_WHITE` — the hot-pink selected-row look from btop
+- **Key hint** (`/ Search  Up/Dn Nav  q Quit`): now styled `FG_BRIGHT_BLACK` (dim gray)
+  to visually recede like btop's secondary labels
+- Theme style variables (`cyanBorder`, `dimHint`) built once at top of
+  `BuildWidgetTree()` from a shared `themeBase As New XjStyle`
+
+---
+
 ## [0.6.1] — 2026-03-13
 
 ### Fixed — Search Mode UX

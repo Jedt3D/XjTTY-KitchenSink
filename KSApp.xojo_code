@@ -124,9 +124,16 @@ Inherits ConsoleApplication
 		  //              mainArea(row) → componentList(25%) | previewArea(auto)
 		  //              previewArea(column) → livePreview(auto) / propertiesPanel(30%)
 		  // [TH] สร้างโครงสร้าง layout 4 ส่วน Phase 3: mSearchInput ฝังใน searchBar
+
+		  // [EN] Theme styles — btop-inspired: cyan borders, dim key hints
+		  // [TH] Theme styles — ดีไซน์แบบ btop: ขอบสี cyan, key hint สี dim
+		  Var themeBase As New XjStyle
+		  Var cyanBorder As XjStyle = themeBase.SetFG(XjANSI.FG_CYAN)
+		  Var dimHint As XjStyle = themeBase.SetFG(XjANSI.FG_BRIGHT_BLACK)
+
 		  mRoot = New XjBox
 		  Call mRoot.SetDirection(XjLayoutNode.DIR_COLUMN)
-		  Call mRoot.SetBorder(0, New XjStyle)
+		  Call mRoot.SetBorder(0, cyanBorder)
 		  Call mRoot.SetTitle(" XjTTY-Toolkit Kitchen Sink ")
 
 		  // [EN] Header: fixed 3 rows, no border — Phase 6 title/version bar placeholder
@@ -143,7 +150,7 @@ Inherits ConsoleApplication
 		  Var searchBar As New XjBox
 		  Call searchBar.SetDirection(XjLayoutNode.DIR_ROW)
 		  Call searchBar.SetHeight(XjConstraint.Fixed(3))
-		  Call searchBar.SetBorder(0, New XjStyle)
+		  Call searchBar.SetBorder(0, cyanBorder)
 		  Call searchBar.SetTitle(" Search ")
 		  mRoot.AddChild(searchBar)
 
@@ -166,7 +173,7 @@ Inherits ConsoleApplication
 		  Var componentList As New XjBox
 		  Call componentList.SetDirection(XjLayoutNode.DIR_COLUMN)
 		  Call componentList.SetWidth(XjConstraint.Percent(25).SetMin(20))
-		  Call componentList.SetBorder(0, New XjStyle)
+		  Call componentList.SetBorder(0, cyanBorder)
 		  Call componentList.SetTitle(" Components ")
 		  mainArea.AddChild(componentList)
 
@@ -177,7 +184,7 @@ Inherits ConsoleApplication
 		  // [TH] Preview area: ขยายเต็มความกว้างที่เหลือ เป็นเจ้าของ livePreview + propertiesPanel
 		  Var previewArea As New XjBox
 		  Call previewArea.SetDirection(XjLayoutNode.DIR_COLUMN)
-		  Call previewArea.SetBorder(0, New XjStyle)
+		  Call previewArea.SetBorder(0, cyanBorder)
 		  Call previewArea.SetTitle(" Preview ")
 		  mainArea.AddChild(previewArea)
 
@@ -245,7 +252,7 @@ Inherits ConsoleApplication
 		  // [TH] Properties panel: 30% ของความสูง preview, ขั้นต่ำ 5 แถว
 		  Var propertiesPanel As New XjBox
 		  Call propertiesPanel.SetHeight(XjConstraint.Percent(30).SetMin(5))
-		  Call propertiesPanel.SetBorder(0, New XjStyle)
+		  Call propertiesPanel.SetBorder(0, cyanBorder)
 		  Call propertiesPanel.SetTitle(" Properties ")
 		  previewArea.AddChild(propertiesPanel)
 
@@ -275,6 +282,7 @@ Inherits ConsoleApplication
 		  Call keysHint.SetText("/ Search  Up/Dn Nav  q Quit")
 		  Call keysHint.SetWidth(XjConstraint.Fixed(30))
 		  Call keysHint.SetAlign(XjText.ALIGN_RIGHT)
+		  Call keysHint.SetStyle(dimHint)
 		  statusBar.AddChild(keysHint)
 		End Sub
 	#tag EndMethod
@@ -638,11 +646,12 @@ Inherits ConsoleApplication
 		  mSelectedLine = lineIdx
 		  If lineIdx < 0 Or lineIdx >= mFlatNodes.Count Then Return
 
-		  // [EN] Highlight selected node
-		  // [TH] ไฮไลต์ node ที่เลือก
-		  Var invBase As New XjStyle
-		  Var invStyle As XjStyle = invBase.SetInverse()
-		  Call mFlatNodes(lineIdx).SetNodeStyle(invStyle)
+		  // [EN] Highlight selected node — magenta background + white text (btop style)
+		  // [TH] ไฮไลต์ node ที่เลือก — พื้นหลัง magenta + ข้อความสีขาว (สไตล์ btop)
+		  Var selBase As New XjStyle
+		  Var selWithBG As XjStyle = selBase.SetBG(XjANSI.BG_MAGENTA)
+		  Var selStyle As XjStyle = selWithBG.SetFG(XjANSI.FG_WHITE)
+		  Call mFlatNodes(lineIdx).SetNodeStyle(selStyle)
 
 		  // [EN] Update status bar, preview widgets, and active demo widget
 		  // [TH] อัปเดต status bar, preview widgets และ demo widget ที่ active
