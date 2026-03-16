@@ -8,6 +8,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [0.8.0] — 2026-03-17
 
+### Added — Batch 5: Enhanced Static Previews (Infrastructure Components)
+
+- **Self-referential descriptions** for layout components (XjBox, XjLayoutNode,
+  XjConstraint, XjLayoutSolver): descriptions now reference the running app itself
+  (e.g. "You are looking at XjBox right now")
+- **Extra property rows** in KSPreviewBuilder for 6 infrastructure components:
+  XjTerminal (API/raw-mode/resize info), XjEventLoop (tick rate/alt screen/cursor),
+  XjReader (key decoding status), XjBox (root/main direction, panel count),
+  XjLayoutSolver (solve rate/traversal), XjConstraint (all constraint types used)
+- **Enhanced LongDesc** for XjPager, XjFocusManager, XjCommand, XjReader,
+  XjTerminal, XjEventLoop, XjFont with richer usage context
+- **Red "Non-Interactive Component" label** (`BG_RED + FG_WHITE`) shown in preview
+  body for all non-interactive components; interactive ones show
+  "[ Interactive ] Press Tab to enter the live demo panel."
+- **"Yes (Tab for demo)"** replaces "Yes (Phase 5)" in properties table
+
 ### Added — Batch 1: Widget Demos (XjText, XjTable, XjTree)
 
 - **XjText live demo** (`"text"` type): pre-built XjText widget with sample paragraph;

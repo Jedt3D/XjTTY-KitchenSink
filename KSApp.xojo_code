@@ -2361,7 +2361,6 @@ Inherits ConsoleApplication
 		End Function
 	#tag EndMethod
 
-
 	// [EN] mCanvas           — 2D character buffer sized to current terminal dimensions
 	// [EN] mDemoBar          — XjProgressBar demo; activated by ActivateDemoWidget("progressbar")
 	// [EN] mDemoInput        — XjTextInput demo; activated by ActivateDemoWidget("textinput")

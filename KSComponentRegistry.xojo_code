@@ -100,22 +100,22 @@ Protected Module KSComponentRegistry
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjBox", "Layout", _
 		    "Flex container (DIR_ROW / DIR_COLUMN)", _
-		    "XjBox is the primary layout container. It arranges children horizontally (DIR_ROW) or vertically (DIR_COLUMN) using XjLayoutSolver to honour each child's XjConstraint.", _
+		    "You are looking at XjBox right now. This 4-panel layout (header, search bar, main area, status bar) is built entirely from XjBox containers arranged with DIR_COLUMN. The main area uses DIR_ROW to place the component list beside the preview panel. XjBox is the primary layout container.", _
 		    "layout flex container box row column direction", False))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjLayoutNode", "Layout", _
 		    "Layout data node attached to each widget", _
-		    "XjLayoutNode stores the resolved position and size of a widget after XjLayoutSolver.Solve. Every XjWidget exposes a LayoutNode property.", _
+		    "Every widget in this UI has an XjLayoutNode that stores its resolved position and size. After XjLayoutSolver.Solve runs each frame, your terminal coordinates flow into ComputedX, ComputedY, ComputedW, ComputedH on each node. The preview panel you are reading is an XjLayoutNode too.", _
 		    "layout node solved position size computed", False))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjConstraint", "Layout", _
 		    "Size rule: Fixed / Percent / Auto / MinMax", _
-		    "XjConstraint defines how a widget is sized within its parent. Chain SetMin/SetMax to clamp the result. Factories: Fixed(n), Percent(p), Auto, MinMax(lo,hi).", _
+		    "The search bar is Fixed(3). The main area is Auto. The status bar is Fixed(1). The component list is Percent(25). Every widget size in this app is expressed as an XjConstraint. Factories: Fixed(n), Percent(p), Auto, MinMax(lo,hi). Chain SetMin/SetMax to clamp.", _
 		    "constraint fixed percent auto minmax min max size", False))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjLayoutSolver", "Layout", _
 		    "Resolves constraints to pixel coordinates", _
-		    "XjLayoutSolver.Solve walks the widget tree, honours DIR_ROW/DIR_COLUMN, and writes ComputedX/Y/W/H into each XjLayoutNode. Called every frame before Paint.", _
+		    "XjLayoutSolver.Solve runs every frame (~30fps) in this app. It walks the widget tree top-down, reads each XjConstraint, and writes absolute pixel coordinates into XjLayoutNode. The 4-panel layout you see is the solver's output — recalculated 30 times per second.", _
 		    "solver layout algorithm flex resolve pixel", False))
 
 		  // --- Widgets (6) ---
@@ -206,7 +206,7 @@ Protected Module KSComponentRegistry
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjFont", "Style", _
 		    "Large text art renderer using glyphs", _
-		    "XjFont renders large ASCII-art text using pre-defined glyph matrices. Useful for banners, headers, and numeric displays.", _
+		    "XjFont renders large 5-row block-art text using Unicode full-block characters. Supports A-Z, 0-9, and basic punctuation. Call Render(text, style) to get a 5-element String array of block-art rows. Pass an optional XjStyle for colored output.", _
 		    "font art text glyph large render banner ascii", False))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjPie", "Style", _
@@ -228,24 +228,24 @@ Protected Module KSComponentRegistry
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjTerminal", "I/O", _
 		    "Terminal size, write, and raw-mode control", _
-		    "XjTerminal is a low-level module wrapping POSIX terminal I/O: Width/Height, Write, EnableRawMode, DisableRawMode, GetSize (TIOCGWINSZ).", _
+		    "XjTerminal wraps POSIX terminal I/O. It provides Width() and Height() to query terminal dimensions, Write() for raw output, and EnableRawMode/DisableRawMode for character-at-a-time input. This app calls GetSize on every SIGWINCH to detect terminal resize. See the Properties panel for your current terminal size.", _
 		    "terminal raw size write read sigwinch ioctl posix", False))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjReader", "I/O", _
 		    "Line-by-line terminal input reader", _
-		    "XjReader reads complete lines from stdin with optional prompt. Supports history navigation if paired with XjHistory.", _
+		    "XjReader handles raw terminal input, parsing multi-byte escape sequences (arrow keys, function keys, UTF-8) into XjKeyEvent objects. Every keypress you make in this app is decoded by XjReader before being dispatched to HandleKey. Supports line editing and history when paired with XjHistory.", _
 		    "reader input line stdin buffer history prompt", False))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjPager", "I/O", _
 		    "Scrollable multi-page content viewer", _
-		    "XjPager renders paginated content with Page Up/Down, Home, End, and q-to-quit navigation. Accepts a String array of lines.", _
+		    "XjPager renders paginated text content with keyboard navigation. Feed it an array of lines and it handles Page Up/Down, Home/End, line scrolling, and q-to-quit. Ideal for help screens, log viewers, and man-page style documentation browsers.", _
 		    "pager scroll page view content lines up down home end", False))
 
 		  // --- Utility (4) ---
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjEventLoop", "Utility", _
 		    "30fps loop with raw mode and SIGWINCH", _
-		    "XjEventLoop drives the TUI render cycle at a configurable tick rate. AutoAlternateScreen, AutoHideCursor, AutoRawMode. Fires OnKeyPress, OnResize, OnTick.", _
+		    "XjEventLoop drives this app at ~30fps (33ms tick interval). It manages raw mode, alternate screen buffer, cursor visibility, and SIGWINCH resize detection. Delegates OnTick, OnKeyPress, and OnResize fire through the loop. See Properties for the configured tick rate.", _
 		    "eventloop tick fps raw resize sigwinch alternate cursor", False))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjKeyEvent", "Utility", _
@@ -255,12 +255,12 @@ Protected Module KSComponentRegistry
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjFocusManager", "Utility", _
 		    "Tab-cycling focus chain manager", _
-		    "XjFocusManager collects focusable widgets via BuildChain, then routes Tab/Shift-Tab for cycling and forwards other keys to the focused widget.", _
+		    "XjFocusManager maintains a chain of focusable widgets and handles Tab/Shift-Tab cycling between them. Call BuildChain with your widget array, then route keys through HandleKey. It forwards non-navigation keys to the focused widget automatically. This app uses manual focus management instead.", _
 		    "focus manager tab chain cycle widget backtab shift", False))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjCommand", "Utility", _
 		    "Shell command runner with output capture", _
-		    "XjCommand runs a shell command synchronously and returns an XjCommandResult with stdout, stderr, and exit code. Safe for build tools and linters.", _
+		    "XjCommand runs shell commands synchronously and captures the result. Call Run(cmd) to get an XjCommandResult with stdout, stderr, and exitCode. Useful for integrating build tools, linters, git commands, and system utilities into TUI applications.", _
 		    "command shell run execute result stdout stderr exit code", False))
 		End Sub
 	#tag EndMethod
