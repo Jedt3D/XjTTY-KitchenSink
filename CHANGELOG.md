@@ -6,9 +6,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased]
+## [0.7.1] — 2026-03-16
 
-*(all planned phases complete)*
+### Fixed — Compilation Error from Stale Library References
+
+- **Removed `ExportModule` and `ThemeModule`** from `KitchenSink.xojo_project` — these were
+  accidentally pulled in when the Xojo IDE re-attached XjTTYLib from the shared toolkit path
+  (`../xojo-ttytoolkit/XjTTYLib/`). `ExportModule` depends on `DBManager`, a class that belongs
+  to the separate `XjTTY-SQLiteBackup` project, causing 5 compilation errors:
+  - `Can't find a type with this name` on all functions accepting `DBManager` parameter
+  - `Parameter "Line" expects type String, but this is type No Type` on `stream.WriteLine`
+- **Root cause**: the previous commit switched XjTTYLib references from local copies
+  (`XjTTYLib/*.xojo_code`) to the shared toolkit (`../xojo-ttytoolkit/XjTTYLib/`). The Xojo IDE
+  picked up every `.xojo_code` file in that folder — including `ExportModule` and `ThemeModule`
+  which are toolkit-internal and not needed by KitchenSink.
+
+### Changed — Project Restructuring
+
+- **Project renamed**: `KitchenSink.xojo_project` → `XjTTYKitchenSink.xojo_project`
+- **XjTTYLib local copies removed**: 59 local `.xojo_code` files replaced with a macOS Alias
+  pointing to `../xojo-ttytoolkit/XjTTYLib/`; project file references updated to relative paths
+- **KSApp.xojo_code**: renamed `DIM` variable to `dimStyle` (avoids collision with Xojo keyword);
+  extracted intermediate row-number variables for ANSI cursor positioning in `RenderHelp()`
 
 ---
 

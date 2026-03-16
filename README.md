@@ -32,12 +32,13 @@ Built as a Xojo Console application using only the `XjTTYLib/` library — no mo
 
 ```
 XjTTY-KitchenSink/
-├── KitchenSink.xojo_project       — Console application project
+├── XjTTYKitchenSink.xojo_project  — Console application project
 ├── KSApp.xojo_code                — App entry point, event loop, layout tree
+├── KSComponentEntry.xojo_code     — Data class for component metadata
 ├── KSComponentRegistry.xojo_code  — Catalog of 31 components with metadata
-├── KSPreviewBuilder.xojo_code     — Live preview builders for each component
-├── KSStatusBar.xojo_code          — Status bar renderer
-├── XjTTYLib/                      — XjTTY-Toolkit library (59 components)
+├── KSPreviewBuilder.xojo_code     — Stateless factory for preview widgets
+├── KSInteractiveLoader.xojo_code  — Maps components to live demo types
+├── XjTTYLib → ../xojo-ttytoolkit/XjTTYLib/  — Alias to shared toolkit (59 components)
 ├── KITCHEN_SINK_PROPOSAL.md       — Full build specification
 ├── CHANGELOG.md                   — Version history
 ├── DEV_CODE_WALKTHROUGH.md        — Code walkthrough for developers

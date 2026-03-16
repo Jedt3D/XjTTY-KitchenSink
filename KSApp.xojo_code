@@ -712,7 +712,7 @@ Inherits ConsoleApplication
 		  Var esc As String = Chr(27)
 		  Var CYAN As String = esc + "[36m"
 		  Var BOLD As String = esc + "[1m"
-		  Var DIM As String = esc + "[90m"
+		  Var dimStyle As String = esc + "[90m"
 		  Var RST As String = esc + "[0m"
 
 		  // [EN] Horizontal border: inner dashes
@@ -732,11 +732,13 @@ Inherits ConsoleApplication
 
 		  // Title row
 		  Var titleContent As String = "          Keyboard Shortcuts          "
-		  out = out + esc + "[" + (startRow + 1).ToString + ";" + startCol.ToString + "H"
+		  Var titleRow As Integer = startRow + 1
+		  out = out + esc + "[" + titleRow.ToString + ";" + startCol.ToString + "H"
 		  out = out + CYAN + "|" + RST + BOLD + titleContent + RST + CYAN + "|" + RST
 
 		  // Separator
-		  out = out + esc + "[" + (startRow + 2).ToString + ";" + startCol.ToString + "H"
+		  Var sepRow As Integer = startRow + 2
+		  out = out + esc + "[" + sepRow.ToString + ";" + startCol.ToString + "H"
 		  out = out + CYAN + "+" + hbar + "+" + RST
 
 		  // Key binding rows — each padded to exactly inner chars
@@ -757,7 +759,8 @@ Inherits ConsoleApplication
 		    While row.Length < inner
 		      row = row + " "
 		    Wend
-		    out = out + esc + "[" + (startRow + 3 + i).ToString + ";" + startCol.ToString + "H"
+		    Var contentRow As Integer = startRow + 3 + i
+		    out = out + esc + "[" + contentRow.ToString + ";" + startCol.ToString + "H"
 		    out = out + CYAN + "|" + RST + row + CYAN + "|" + RST
 		  Next i
 
@@ -768,10 +771,11 @@ Inherits ConsoleApplication
 		    hintStr = hintStr + " "
 		  Wend
 		  out = out + esc + "[" + hintRow.ToString + ";" + startCol.ToString + "H"
-		  out = out + CYAN + "|" + RST + DIM + hintStr + RST + CYAN + "|" + RST
+		  out = out + CYAN + "|" + RST + dimStyle + hintStr + RST + CYAN + "|" + RST
 
 		  // Bottom border
-		  out = out + esc + "[" + (hintRow + 1).ToString + ";" + startCol.ToString + "H"
+		  Var bottomRow As Integer = hintRow + 1
+		  out = out + esc + "[" + bottomRow.ToString + ";" + startCol.ToString + "H"
 		  out = out + CYAN + "+" + hbar + "+" + RST
 
 		  XjTerminal.Write(out)
