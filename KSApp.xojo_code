@@ -99,6 +99,14 @@ Inherits ConsoleApplication
 		    Call mDemoTreeWidget.SetHeight(XjConstraint.Fixed(6))
 		    mDemoTreeScroll = 0
 		    Call mDemoTreeWidget.SetScrollOffset(0)
+		  Case "blockart"
+		    // [EN] Font demo uses mDemoTextWidget (not overlay) to avoid RenderDemoOverlay crash.
+		    //      Block art rendered by KSFontRenderer into the pre-built XjText widget.
+		    // [TH] Demo font ใช้ mDemoTextWidget (ไม่ใช่ overlay) เพื่อหลีกเลี่ยง crash จาก RenderDemoOverlay
+		    //      Block art render โดย KSFontRenderer ลงใน XjText widget ที่สร้างไว้ล่วงหน้า
+		    mFontInput = "HI"
+		    Call mDemoTextWidget.SetHeight(XjConstraint.Fixed(7))
+		    UpdateFontWidget()
 		  Case "pie"
 		    mPieDataset = 0
 		    mOverlayLines = BuildPieDemo(mPieDataset)
@@ -585,6 +593,8 @@ Inherits ConsoleApplication
 		        End If
 		      End If
 
+		    Case "blockart"
+		      HandleFontDemoKey(key)
 		    Case "pie"
 		      HandlePieDemoKey(key)
 		    Case "confirm"
@@ -781,6 +791,8 @@ Inherits ConsoleApplication
 		    Return "b border   h header"
 		  Case "tree"
 		    Return "Up/Dn scroll tree"
+		  Case "blockart"
+		    Return "Type A-Z 0-9   Bksp del"
 		  Case "pie"
 		    Return "1/2/3 switch dataset"
 		  Case "style"
@@ -2361,6 +2373,45 @@ Inherits ConsoleApplication
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h21
+		Private Sub UpdateFontWidget()
+		  // [EN] Render block-art text into mDemoTextWidget. Called from ActivateDemoWidget
+		  //      and HandleFontDemoKey. Uses KSFontRenderer to avoid XjFont.Render() crash.
+		  // [TH] Render block-art ลงใน mDemoTextWidget เรียกจาก ActivateDemoWidget
+		  //      และ HandleFontDemoKey ใช้ KSFontRenderer เพื่อหลีกเลี่ยง crash จาก XjFont.Render()
+		  Var rows() As String = KSFontRenderer.RenderText(mFontInput)
+		  Var display As String = rows(0) + Chr(10) + rows(1) + Chr(10) + rows(2) + Chr(10) + rows(3) + Chr(10) + rows(4)
+		  display = display + Chr(10) + "Text: " + mFontInput
+		  Call mDemoTextWidget.SetText(display)
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleFontDemoKey(key As XjKeyEvent)
+		  // [EN] Font demo key handler: type chars to update block-art in mDemoTextWidget.
+		  //      Uses widget rendering (not overlay) to avoid RenderDemoOverlay crash on Tahoe.
+		  // [TH] ตัวจัดการคีย์ demo font: พิมพ์ตัวอักษรอัปเดต block-art ใน mDemoTextWidget
+		  //      ใช้ widget rendering (ไม่ใช่ overlay) เพื่อหลีกเลี่ยง crash Tahoe
+		  If key.KeyCode = XjKeyEvent.KEY_BACKSPACE Or key.KeyCode = XjKeyEvent.KEY_DELETE Then
+		    If mFontInput.Length > 0 Then
+		      mFontInput = mFontInput.Left(mFontInput.Length - 1)
+		    End If
+		    UpdateFontWidget()
+		    Return
+		  End If
+		  Var ch As String = key.Char
+		  If ch = "" Then Return
+		  Var code As Integer = ch.Asc
+		  Var isAlpha As Boolean = (code >= 65 And code <= 90) Or (code >= 97 And code <= 122)
+		  Var isDigit As Boolean = (code >= 48 And code <= 57)
+		  Var isPunct As Boolean = (ch = "!" Or ch = "." Or ch = "-" Or ch = ":" Or ch = " ")
+		  If (isAlpha Or isDigit Or isPunct) And mFontInput.Length < 8 Then
+		    mFontInput = mFontInput + ch.Uppercase
+		    UpdateFontWidget()
+		  End If
+		End Sub
+	#tag EndMethod
+
 	// [EN] mCanvas           — 2D character buffer sized to current terminal dimensions
 	// [EN] mDemoBar          — XjProgressBar demo; activated by ActivateDemoWidget("progressbar")
 	// [EN] mDemoInput        — XjTextInput demo; activated by ActivateDemoWidget("textinput")
@@ -2485,6 +2536,10 @@ Inherits ConsoleApplication
 
 	#tag Property, Flags = &h21
 		Private mOverlayLines() As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mFontInput As String
 	#tag EndProperty
 
 	#tag Property, Flags = &h21

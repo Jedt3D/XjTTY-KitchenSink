@@ -207,7 +207,7 @@ Protected Module KSComponentRegistry
 		    "XjFont", "Style", _
 		    "Large text art renderer using glyphs", _
 		    "XjFont renders large 5-row block-art text using Unicode full-block characters. Supports A-Z, 0-9, and basic punctuation. Call Render(text, style) to get a 5-element String array of block-art rows. Pass an optional XjStyle for colored output.", _
-		    "font art text glyph large render banner ascii", False))
+		    "font art text glyph large render banner ascii", True))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjPie", "Style", _
 		    "ASCII pie chart using block characters", _

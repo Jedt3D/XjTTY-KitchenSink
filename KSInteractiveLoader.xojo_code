@@ -3,7 +3,7 @@
 //      component entry and configures it. Returns a "demo type" key that KSApp
 //      uses to route keys and drive ticks to the correct pre-built widget.
 //      Demo types: "textinput" | "progressbar" | "spinner" | "keyevent" | "text" | "table" | "tree"
-//                | "pie" | "style" | "color" | "canvas"
+//                | "pie" | "style" | "color" | "canvas" | "font"
 //                | "confirm" | "keypress" | "expand" | "ask" | "enum"
 //                | "select" | "multiselect" | "suggest" | "collect"
 //                | "mockup" | ""
@@ -78,7 +78,11 @@ Protected Module KSInteractiveLoader
 		    // [EN] Batch 3: enum select prompt overlay mockup
 		    // [TH] Batch 3: demo overlay mockup enum select prompt
 		    Return "enum"
-		  Case "XjSelectPrompt"
+		  Case "XjFont"
+    // [EN] Font demo: local glyph rendering (bypasses XjFont.Render to avoid Tahoe crash)
+    // [TH] Demo font: render glyph ในตัว (ข้าม XjFont.Render เพื่อหลีกเลี่ยง Tahoe crash)
+    Return "blockart"
+  Case "XjSelectPrompt"
 		    // [EN] Batch 4: select prompt overlay mockup (arrow list)
 		    // [TH] Batch 4: demo overlay mockup select prompt (รายการลูกศร)
 		    Return "select"
