@@ -24,7 +24,7 @@ Built as a Xojo Console application using only the `XjTTYLib/` library — no mo
 
 - **Xojo 2025** or later
 - Terminal: minimum **80×24** columns/rows
-- macOS (primary), Linux (likely supported via XjTTYLib)
+- macOS, Windows, or Linux – I only tested on macOS only in this version.
 - XjTTYLib from (https://github.com/Jedt3D/XjTTY-Toolkit) **Important**
 
 ---
