@@ -202,7 +202,7 @@ Protected Module KSComponentRegistry
 		    "XjStyle", "Style", _
 		    "Composable ANSI text style (immutable builder)", _
 		    "XjStyle is an immutable-style builder. Chain SetFG/SetBG/SetBold/SetInverse etc.; each returns a new instance. Apply(text) wraps with ANSI codes + reset.", _
-		    "style ansi bold color fg bg italic underline inverse dim", False))
+		    "style ansi bold color fg bg italic underline inverse dim", True))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjFont", "Style", _
 		    "Large text art renderer using glyphs", _
@@ -212,19 +212,19 @@ Protected Module KSComponentRegistry
 		    "XjPie", "Style", _
 		    "ASCII pie chart using block characters", _
 		    "XjPie renders a circular pie chart using Unicode block and braille characters. Supply slice percentages and optional labels.", _
-		    "pie chart visual ascii graph slice block braille", False))
+		    "pie chart visual ascii graph slice block braille", True))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjColor", "Style", _
 		    "Color constants and palette helpers", _
 		    "XjColor provides named constants for the 16-color ANSI palette and helpers for 256-color and 24-bit RGB lookups.", _
-		    "color ansi 256 palette rgb 16 named constant", False))
+		    "color ansi 256 palette rgb 16 named constant", True))
 
 		  // --- I/O (4) ---
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjCanvas", "I/O", _
 		    "2D character buffer for off-screen rendering", _
 		    "XjCanvas is a width×height grid of XjCell. Widgets paint into it with WriteText/DrawBox. Render() converts to an ANSI string; DiffRender() sends only changed cells.", _
-		    "canvas buffer cell render diff screen offscreen 2d", False))
+		    "canvas buffer cell render diff screen offscreen 2d", True))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjTerminal", "I/O", _
 		    "Terminal size, write, and raw-mode control", _

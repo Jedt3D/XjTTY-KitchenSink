@@ -99,6 +99,15 @@ Inherits ConsoleApplication
 		    Call mDemoTreeWidget.SetHeight(XjConstraint.Fixed(6))
 		    mDemoTreeScroll = 0
 		    Call mDemoTreeWidget.SetScrollOffset(0)
+		  Case "pie"
+		    mPieDataset = 0
+		    mOverlayLines = BuildPieDemo(mPieDataset)
+		  Case "style"
+		    mOverlayLines = BuildStyleDemo()
+		  Case "color"
+		    mOverlayLines = BuildColorDemo()
+		  Case "canvas"
+		    mOverlayLines = BuildCanvasDemo()
 		  End Select
 		End Sub
 	#tag EndMethod
@@ -559,6 +568,9 @@ Inherits ConsoleApplication
 		        End If
 		      End If
 
+		    Case "pie"
+		      HandlePieDemoKey(key)
+
 		    End Select
 		    Return
 		  End If
@@ -734,6 +746,14 @@ Inherits ConsoleApplication
 		    Return "b border   h header"
 		  Case "tree"
 		    Return "Up/Dn scroll tree"
+		  Case "pie"
+		    Return "1/2/3 switch dataset"
+		  Case "style"
+		    Return "Style showcase"
+		  Case "color"
+		    Return "Color palette"
+		  Case "canvas"
+		    Return "Canvas concept"
 		  Case Else
 		    Return ""
 		  End Select
@@ -757,6 +777,40 @@ Inherits ConsoleApplication
 		    mDemoBar.HandleTick(tickCount)
 		  End Select
 		  Render()
+		  RenderOverlayIfNeeded()
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub RenderOverlayIfNeeded()
+		  // [EN] Check if an overlay demo should be rendered on top of the normal UI.
+		  // [TH] ตรวจสอบว่าควร render overlay demo ทับ UI ปกติหรือไม่
+		  If mPreviewFocus Then
+		    Select Case mDemoType
+		    Case "pie", "style", "color", "canvas"
+		      RenderDemoOverlay()
+		    End Select
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandlePieDemoKey(key As XjKeyEvent)
+		  // [EN] Batch 2: XjPie demo — 1/2/3 switch datasets
+		  // [TH] Batch 2: demo XjPie — 1/2/3 สลับ dataset
+		  If key.Char = "1" Then
+		    mPieDataset = 0
+		    mOverlayLines = BuildPieDemo(mPieDataset)
+		    Call mStatusDesc.SetText(" Dataset: Languages   1/2/3 switch  Esc back")
+		  ElseIf key.Char = "2" Then
+		    mPieDataset = 1
+		    mOverlayLines = BuildPieDemo(mPieDataset)
+		    Call mStatusDesc.SetText(" Dataset: Platforms   1/2/3 switch  Esc back")
+		  ElseIf key.Char = "3" Then
+		    mPieDataset = 2
+		    mOverlayLines = BuildPieDemo(mPieDataset)
+		    Call mStatusDesc.SetText(" Dataset: Components  1/2/3 switch  Esc back")
+		  End If
 		End Sub
 	#tag EndMethod
 
@@ -1009,6 +1063,202 @@ Inherits ConsoleApplication
 		End Sub
 	#tag EndMethod
 
+	#tag Method, Flags = &h21
+		Private Sub RenderDemoOverlay()
+		  If mOverlayLines.Count = 0 Then Return
+		  Var startCol As Integer = mPreviewBody.ContentX() + 1
+		  Var startRow As Integer = mPreviewBody.ContentY() + 1
+		  Var maxW As Integer = mPreviewBody.ContentWidth()
+		  Var maxH As Integer = mPreviewBody.ContentHeight()
+		  Var esc As String = Chr(27)
+		  Var out As String = ""
+		  Var lineCount As Integer = mOverlayLines.Count - 1
+		  If lineCount > maxH - 1 Then lineCount = maxH - 1
+		  For i As Integer = 0 To lineCount
+		    Var line As String = mOverlayLines(i)
+		    Var clearStr As String = ""
+		    Var j As Integer
+		    For j = 1 To maxW
+		      clearStr = clearStr + " "
+		    Next
+		    Var rowNum As Integer = startRow + i
+		    Var rowPos As String = esc + "[" + rowNum.ToString + ";" + startCol.ToString + "H"
+		    out = out + rowPos + XjANSI.Reset + clearStr + rowPos + line
+		  Next
+		  out = out + XjANSI.Reset
+		  XjTerminal.Write(out)
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildPieDemo(dataset As Integer) As String()
+		  Var pie As New XjPie
+		  Call pie.SetWidth(30)
+		  Select Case dataset
+		  Case 0
+		    Call pie.AddSlice("Xojo", 45.0)
+		    Call pie.AddSlice("Python", 25.0)
+		    Call pie.AddSlice("Go", 15.0)
+		    Call pie.AddSlice("Rust", 15.0)
+		  Case 1
+		    Call pie.AddSlice("macOS", 55.0)
+		    Call pie.AddSlice("Windows", 30.0)
+		    Call pie.AddSlice("Linux", 15.0)
+		  Case 2
+		    Call pie.AddSlice("Layout", 4.0)
+		    Call pie.AddSlice("Widgets", 6.0)
+		    Call pie.AddSlice("Prompts", 9.0)
+		    Call pie.AddSlice("Style", 4.0)
+		    Call pie.AddSlice("I/O", 4.0)
+		    Call pie.AddSlice("Utility", 4.0)
+		  End Select
+		  Var result() As String
+		  Var title As String
+		  Select Case dataset
+		  Case 0
+		    title = "Languages"
+		  Case 1
+		    title = "Platforms"
+		  Case 2
+		    title = "XjTTY Components"
+		  End Select
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleStyleBold As XjStyle = titleStyle.SetBold
+		  result.Add(titleStyleBold.Apply("XjPie: " + title))
+		  result.Add("")
+		  Var pieLines() As String = pie.Render()
+		  For i As Integer = 0 To pieLines.Count - 1
+		    result.Add(pieLines(i))
+		  Next
+		  Return result
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildStyleDemo() As String()
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjStyle Showcase"))
+		  lines.Add("")
+		  Var bold As XjStyle = base.SetBold
+		  Var dim_ As XjStyle = base.SetDim
+		  Var italic As XjStyle = base.SetItalic
+		  lines.Add(bold.Apply("Bold") + "  " + dim_.Apply("Dim") + "  " + italic.Apply("Italic"))
+		  Var underline As XjStyle = base.SetUnderline
+		  Var strike As XjStyle = base.SetStrikethrough
+		  Var inverse As XjStyle = base.SetInverse
+		  lines.Add(underline.Apply("Underline") + "  " + strike.Apply("Strike") + "  " + inverse.Apply("Inverse"))
+		  lines.Add("")
+		  Var fgRed As XjStyle = base.SetFG(XjANSI.FG_RED)
+		  Var fgGreen As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  Var fgBlue As XjStyle = base.SetFG(XjANSI.FG_BLUE)
+		  Var fgYellow As XjStyle = base.SetFG(XjANSI.FG_YELLOW)
+		  lines.Add(fgRed.Apply("Red") + " " + fgGreen.Apply("Green") + " " + fgBlue.Apply("Blue") + " " + fgYellow.Apply("Yellow"))
+		  Var fgCyan As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var fgMag As XjStyle = base.SetFG(XjANSI.FG_MAGENTA)
+		  Var fgWhite As XjStyle = base.SetFG(XjANSI.FG_WHITE)
+		  Var fgGray As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_BLACK)
+		  lines.Add(fgCyan.Apply("Cyan") + " " + fgMag.Apply("Magenta") + " " + fgWhite.Apply("White") + " " + fgGray.Apply("Gray"))
+		  lines.Add("")
+		  Var bgRed As XjStyle = base.SetBG(XjANSI.BG_RED)
+		  Var bgRedW As XjStyle = bgRed.SetFG(XjANSI.FG_WHITE)
+		  Var bgBlue As XjStyle = base.SetBG(XjANSI.BG_BLUE)
+		  Var bgBlueW As XjStyle = bgBlue.SetFG(XjANSI.FG_WHITE)
+		  Var bgGreen As XjStyle = base.SetBG(XjANSI.BG_GREEN)
+		  Var bgGreenB As XjStyle = bgGreen.SetFG(XjANSI.FG_BLACK)
+		  lines.Add(bgRedW.Apply(" On Red ") + " " + bgBlueW.Apply(" On Blue ") + " " + bgGreenB.Apply(" On Green "))
+		  lines.Add("")
+		  Var boldRed As XjStyle = bold.SetFG(XjANSI.FG_RED)
+		  Var italicCyan As XjStyle = italic.SetFG(XjANSI.FG_CYAN)
+		  lines.Add(boldRed.Apply("Bold+Red") + "  " + italicCyan.Apply("Italic+Cyan"))
+		  Return lines
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildColorDemo() As String()
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjColor Palette"))
+		  lines.Add("")
+		  lines.Add("Standard: " + XjColor.Red("Red") + " " + XjColor.Green("Grn") + " " + XjColor.Blue("Blu") + " " + XjColor.Yellow("Yel"))
+		  lines.Add("          " + XjColor.Cyan("Cyn") + " " + XjColor.Magenta("Mag") + " " + XjColor.White("Wht"))
+		  lines.Add("")
+		  lines.Add("Bright:   " + XjColor.BrightRed("Red") + " " + XjColor.BrightGreen("Grn") + " " + XjColor.BrightBlue("Blu") + " " + XjColor.BrightYellow("Yel"))
+		  lines.Add("          " + XjColor.BrightCyan("Cyn") + " " + XjColor.BrightMagenta("Mag") + " " + XjColor.White("Wht"))
+		  lines.Add("")
+		  Var block As String = Chr(&h2588)
+		  Var strip As String = "256:      "
+		  Var ci As Integer
+		  For ci = 0 To 15
+		    strip = strip + XjColor.Color256(block + block, ci * 16)
+		  Next
+		  lines.Add(strip)
+		  lines.Add("")
+		  lines.Add("Gradient: " + XjColor.Gradient("Rainbow gradient text!", 255, 0, 0, 0, 0, 255))
+		  lines.Add("")
+		  lines.Add("Semantic: " + XjColor.Success("Success") + " " + XjColor.Warning("Warning") + " " + XjColor.Error_("Error") + " " + XjColor.Info("Info"))
+		  Return lines
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildCanvasDemo() As String()
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjCanvas — 2D Character Buffer"))
+		  lines.Add("")
+		  Var dimStyle As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_BLACK)
+		  Var hlStyle As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  Var whiteStyle As XjStyle = base.SetFG(XjANSI.FG_WHITE)
+		  lines.Add(dimStyle.Apply("Each position is an XjCell = char + XjStyle"))
+		  lines.Add("")
+		  lines.Add(whiteStyle.Apply("WriteText(x, y, text, style) to paint:"))
+		  Var c As New XjCanvas(20, 3)
+		  Var cyanStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var cyanBold As XjStyle = cyanStyle.SetBold
+		  Var greenStyle As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  c.WriteText(0, 0, "Hello", cyanBold)
+		  c.WriteText(6, 0, "from", greenStyle)
+		  c.WriteText(11, 0, "XjCanvas", hlStyle)
+		  c.WriteText(0, 1, "Width:20 Height:3", dimStyle)
+		  c.WriteText(0, 2, "Render() -> ANSI", whiteStyle)
+		  Var border As String = dimStyle.Apply("+--------------------+")
+		  lines.Add(border)
+		  Var row As Integer
+		  For row = 0 To 2
+		    Var rowStr As String = dimStyle.Apply("|")
+		    Var col As Integer
+		    For col = 0 To 19
+		      Var cell As XjCell = c.GetCell(col, row)
+		      If cell <> Nil Then
+		        Var cs As XjStyle = cell.Style
+		        If cs <> Nil And Not cs.IsEmpty Then
+		          rowStr = rowStr + cs.Apply(cell.Char)
+		        Else
+		          rowStr = rowStr + cell.Char
+		        End If
+		      Else
+		        rowStr = rowStr + " "
+		      End If
+		    Next
+		    rowStr = rowStr + dimStyle.Apply("|")
+		    lines.Add(rowStr)
+		  Next
+		  lines.Add(border)
+		  lines.Add("")
+		  lines.Add(dimStyle.Apply("DiffRender() sends only changed cells"))
+		  Return lines
+		End Function
+	#tag EndMethod
+
 
 	// [EN] mCanvas           — 2D character buffer sized to current terminal dimensions
 	// [EN] mDemoBar          — XjProgressBar demo; activated by ActivateDemoWidget("progressbar")
@@ -1130,6 +1380,14 @@ Inherits ConsoleApplication
 
 	#tag Property, Flags = &h21
 		Private mDemoType As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mOverlayLines() As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mPieDataset As Integer
 	#tag EndProperty
 
 	#tag Property, Flags = &h21

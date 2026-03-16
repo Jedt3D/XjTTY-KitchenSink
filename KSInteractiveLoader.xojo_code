@@ -2,7 +2,7 @@
 // [EN] KSInteractiveLoader — determines which live demo widget corresponds to a
 //      component entry and configures it. Returns a "demo type" key that KSApp
 //      uses to route keys and drive ticks to the correct pre-built widget.
-//      Demo types: "textinput" | "progressbar" | "spinner" | "keyevent" | "text" | "table" | "tree" | "mockup" | ""
+//      Demo types: "textinput" | "progressbar" | "spinner" | "keyevent" | "text" | "table" | "tree" | "pie" | "style" | "color" | "canvas" | "mockup" | ""
 // [TH] KSInteractiveLoader — กำหนด demo widget ที่ใช้สำหรับ component entry
 //      และกำหนดค่าเริ่มต้น คืนค่า "demo type" เพื่อให้ KSApp ส่ง key และ tick
 //      ไปยัง widget ที่สร้างไว้ล่วงหน้าอย่างถูกต้อง
@@ -38,6 +38,22 @@ Protected Module KSInteractiveLoader
 		    // [EN] Batch 1: tree navigation demo using pre-built XjTree
 		    // [TH] Batch 1: demo navigation tree ใช้ XjTree ที่สร้างไว้ล่วงหน้า
 		    Return "tree"
+		  Case "XjPie"
+		    // [EN] Batch 2: pie chart overlay demo
+		    // [TH] Batch 2: demo overlay pie chart
+		    Return "pie"
+		  Case "XjStyle"
+		    // [EN] Batch 2: style showcase overlay demo
+		    // [TH] Batch 2: demo overlay แสดง style
+		    Return "style"
+		  Case "XjColor"
+		    // [EN] Batch 2: color palette overlay demo
+		    // [TH] Batch 2: demo overlay palette สี
+		    Return "color"
+		  Case "XjCanvas"
+		    // [EN] Batch 2: canvas concept overlay demo
+		    // [TH] Batch 2: demo overlay แนวคิด canvas
+		    Return "canvas"
 		  Case Else
 		    // [EN] Prompts and all other IsInteractive entries: show a mockup
 		    // [TH] Prompt และ entry IsInteractive อื่นๆ: แสดง mockup
