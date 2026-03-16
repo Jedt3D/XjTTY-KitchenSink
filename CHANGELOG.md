@@ -6,6 +6,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [0.8.1] — 2026-03-17
+
+### Added — XjFont Interactive Block-Art Demo
+
+- **KSFontRenderer.xojo_code**: new separate module for local block-art text rendering,
+  bypassing `XjFont.Render()` which triggers macOS Tahoe xzone malloc crash. Glyph lookup
+  split across 4 small methods (`GlyphAJ`, `GlyphKT`, `GlyphUZ`, `GlyphNum`) to keep
+  method bodies under Tahoe threshold.
+- **XjFont live demo** (`"blockart"` type): renders block-art text into `mDemoTextWidget`
+  (pre-built XjText widget); type A–Z, 0–9 to build text (max 8 chars); Backspace deletes;
+  displays full-block Unicode (█) characters in 5×5 pixel font
+- `KSInteractiveLoader.DemoTypeFor`: new Case entry mapping `XjFont` → `"blockart"`
+- `KSComponentRegistry`: set `IsInteractive=True` for XjFont
+- `KSApp.UpdateFontWidget()`: renders block art via `KSFontRenderer.RenderText()` into
+  `mDemoTextWidget.SetText()` — completely bypasses `RenderDemoOverlay()` to avoid crash
+- `KSApp.HandleFontDemoKey()`: routes printable keys and Backspace to font input buffer
+- New property: `mFontInput As String` for tracking typed text
+
+### Fixed — RenderDemoOverlay Crash for XjFont
+
+- **Root cause**: `RenderDemoOverlay()` triggers macOS Tahoe xzone malloc crash specifically
+  when called for XjFont entry. Even a minimal 2-line plain text overlay crashes. Suspected
+  accumulated heap fragmentation from rendering previous components triggers xzone detector.
+  The method works correctly for all 13 other overlay demo types.
+- **Fix**: Use widget-based rendering (`mDemoTextWidget`) instead of ANSI cursor-positioned
+  overlay. Block art renders inline in the widget tree, completely bypassing `RenderDemoOverlay()`.
+
+---
+
 ## [0.8.0] — 2026-03-17
 
 ### Added — Batch 5: Enhanced Static Previews (Infrastructure Components)

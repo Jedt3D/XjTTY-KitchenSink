@@ -1,10 +1,12 @@
+# macOS
 .DS_Store
+
+# Xojo IDE
 Builds*/
-CHANGELOG.md
-DEV_CODE_WALKTHROUGH.md
-OPTIMIZATION_PLAN.md
-TEAM_WORKFLOW.md
-CLAUDE.md
-KITCHEN_SINK_PROPOSAL.md
-.claude
+*.xojo_uistate
+*.xojo_resources
 xojo_controller.applescript
+
+# Project tooling
+.xojo_index/
+.claude/
