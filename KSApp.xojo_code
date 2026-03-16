@@ -108,6 +108,14 @@ Inherits ConsoleApplication
 		    mOverlayLines = BuildColorDemo()
 		  Case "canvas"
 		    mOverlayLines = BuildCanvasDemo()
+		  Case "confirm", "keypress", "expand", "ask", "enum"
+		    // [EN] Batch 3: prompt overlay mockups — reset state and build initial overlay
+		    // [TH] Batch 3: overlay mockup ของ prompt — รีเซ็ต state และสร้าง overlay เริ่มต้น
+		    mPromptState = 0
+		    mPromptInput = ""
+		    mPromptAnswer = ""
+		    mExpandExpanded = False
+		    BuildPromptOverlayLines()
 		  End Select
 		End Sub
 	#tag EndMethod
@@ -570,6 +578,16 @@ Inherits ConsoleApplication
 
 		    Case "pie"
 		      HandlePieDemoKey(key)
+		    Case "confirm"
+		      HandleConfirmDemoKey(key)
+		    Case "keypress"
+		      HandleKeyPressDemoKey(key)
+		    Case "expand"
+		      HandleExpandDemoKey(key)
+		    Case "ask"
+		      HandleAskDemoKey(key)
+		    Case "enum"
+		      HandleEnumDemoKey(key)
 
 		    End Select
 		    Return
@@ -754,6 +772,16 @@ Inherits ConsoleApplication
 		    Return "Color palette"
 		  Case "canvas"
 		    Return "Canvas concept"
+		  Case "confirm"
+		    Return "Y/N to answer"
+		  Case "keypress"
+		    Return "Press any key"
+		  Case "expand"
+		    Return "y/n select   h expand"
+		  Case "ask"
+		    Return "Type text   Enter submit"
+		  Case "enum"
+		    Return "1-3 select   Enter confirm"
 		  Case Else
 		    Return ""
 		  End Select
@@ -787,7 +815,7 @@ Inherits ConsoleApplication
 		  // [TH] ตรวจสอบว่าควร render overlay demo ทับ UI ปกติหรือไม่
 		  If mPreviewFocus Then
 		    Select Case mDemoType
-		    Case "pie", "style", "color", "canvas"
+		    Case "pie", "style", "color", "canvas", "confirm", "keypress", "expand", "ask", "enum"
 		      RenderDemoOverlay()
 		    End Select
 		  End If
@@ -810,6 +838,433 @@ Inherits ConsoleApplication
 		    mPieDataset = 2
 		    mOverlayLines = BuildPieDemo(mPieDataset)
 		    Call mStatusDesc.SetText(" Dataset: Components  1/2/3 switch  Esc back")
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub BuildPromptOverlayLines()
+		  // [EN] Batch 3: dispatch to the correct prompt overlay builder based on mDemoType.
+		  //      Separated from ActivateDemoWidget to keep method bodies small (Tahoe workaround).
+		  // [TH] Batch 3: ส่งต่อไปยัง builder overlay prompt ที่ถูกต้องตาม mDemoType
+		  //      แยกจาก ActivateDemoWidget เพื่อให้ method body เล็ก (workaround Tahoe)
+		  Select Case mDemoType
+		  Case "confirm"
+		    mOverlayLines = BuildConfirmOverlay()
+		  Case "keypress"
+		    mOverlayLines = BuildKeyPressOverlay()
+		  Case "expand"
+		    mOverlayLines = BuildExpandOverlay()
+		  Case "ask"
+		    mOverlayLines = BuildAskOverlay()
+		  Case "enum"
+		    mOverlayLines = BuildEnumOverlay()
+		  End Select
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildConfirmOverlay() As String()
+		  // [EN] Batch 3: build overlay lines for XjConfirmPrompt mockup.
+		  //      State 0: active — shows "? Are you sure? (Y/n) _"
+		  //      State 1: settled — shows "✓ Are you sure? Yes/No"
+		  // [TH] Batch 3: สร้าง overlay lines สำหรับ mockup XjConfirmPrompt
+		  //      State 0: active — แสดง "? Are you sure? (Y/n) _"
+		  //      State 1: settled — แสดง "✓ Are you sure? Yes/No"
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjConfirmPrompt Demo"))
+		  lines.Add("")
+
+		  Var prefixGreen As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  Var prefixBold As XjStyle = prefixGreen.SetBold
+		  Var qStyle As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_WHITE)
+		  Var qBold As XjStyle = qStyle.SetBold
+		  Var ansStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var helpDim As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_BLACK)
+		  Var cursorInv As XjStyle = base.SetInverse
+
+		  If mPromptState = 0 Then
+		    Var line As String = "  " + prefixBold.Apply("?") + " "
+		    line = line + qBold.Apply("Are you sure?") + " "
+		    line = line + helpDim.Apply("(Y/n)") + " "
+		    line = line + cursorInv.Apply(" ")
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press Y or N to answer"))
+		  Else
+		    Var checkMark As String = Chr(&h2714)
+		    Var line As String = "  " + prefixBold.Apply(checkMark) + " "
+		    line = line + qBold.Apply("Are you sure?") + " "
+		    line = line + ansStyle.Apply(mPromptAnswer)
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press any key to reset"))
+		  End If
+
+		  Return lines
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildKeyPressOverlay() As String()
+		  // [EN] Batch 3: build overlay lines for XjKeyPressPrompt mockup.
+		  //      State 0: active — shows "? Press any key: _"
+		  //      State 1: settled — shows "✓ Press any key: <keyname>"
+		  // [TH] Batch 3: สร้าง overlay lines สำหรับ mockup XjKeyPressPrompt
+		  //      State 0: active — แสดง "? Press any key: _"
+		  //      State 1: settled — แสดง "✓ Press any key: <keyname>"
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjKeyPressPrompt Demo"))
+		  lines.Add("")
+
+		  Var prefixGreen As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  Var prefixBold As XjStyle = prefixGreen.SetBold
+		  Var qStyle As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_WHITE)
+		  Var qBold As XjStyle = qStyle.SetBold
+		  Var ansStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var helpDim As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_BLACK)
+		  Var cursorInv As XjStyle = base.SetInverse
+
+		  If mPromptState = 0 Then
+		    Var line As String = "  " + prefixBold.Apply("?") + " "
+		    line = line + qBold.Apply("Press any key:") + " "
+		    line = line + cursorInv.Apply(" ")
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press any key to capture it"))
+		  Else
+		    Var checkMark As String = Chr(&h2714)
+		    Var line As String = "  " + prefixBold.Apply(checkMark) + " "
+		    line = line + qBold.Apply("Press any key:") + " "
+		    line = line + ansStyle.Apply(mPromptAnswer)
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press any key to try again"))
+		  End If
+
+		  Return lines
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildExpandOverlay() As String()
+		  // [EN] Batch 3: build overlay lines for XjExpandPrompt mockup.
+		  //      State 0 collapsed: compact key list with h for help
+		  //      State 0 expanded: full choice list with key + description
+		  //      State 1: settled answer
+		  // [TH] Batch 3: สร้าง overlay lines สำหรับ mockup XjExpandPrompt
+		  //      State 0 ย่อ: key list สั้นพร้อม h สำหรับ help
+		  //      State 0 ขยาย: choice list เต็มพร้อม key + คำอธิบาย
+		  //      State 1: คำตอบ settled
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjExpandPrompt Demo"))
+		  lines.Add("")
+
+		  Var prefixGreen As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  Var prefixBold As XjStyle = prefixGreen.SetBold
+		  Var qStyle As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_WHITE)
+		  Var qBold As XjStyle = qStyle.SetBold
+		  Var ansStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var helpDim As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_BLACK)
+		  Var activeClr As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var cursorInv As XjStyle = base.SetInverse
+
+		  If mPromptState = 1 Then
+		    // [EN] Settled — show final answer
+		    // [TH] Settled — แสดงคำตอบสุดท้าย
+		    Var line As String = "  " + prefixBold.Apply("?") + " "
+		    line = line + qBold.Apply("Overwrite?") + " "
+		    line = line + ansStyle.Apply(mPromptAnswer)
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press any key to reset"))
+		  ElseIf mExpandExpanded Then
+		    // [EN] Expanded — full option list
+		    // [TH] ขยาย — option list เต็ม
+		    Var qLine As String = "  " + prefixBold.Apply("?") + " "
+		    qLine = qLine + qBold.Apply("Overwrite?")
+		    lines.Add(qLine)
+		    lines.Add("    " + activeClr.Apply("y") + ") Yes")
+		    lines.Add("    " + activeClr.Apply("n") + ") No")
+		    lines.Add("    " + activeClr.Apply("h") + ") Help")
+		    lines.Add("  Choice: " + cursorInv.Apply(" "))
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press y or n to select"))
+		  Else
+		    // [EN] Collapsed — compact key hint
+		    // [TH] ย่อ — key hint แบบสั้น
+		    Var line As String = "  " + prefixBold.Apply("?") + " "
+		    line = line + qBold.Apply("Overwrite?") + " "
+		    line = line + helpDim.Apply("(enter h for help)") + " "
+		    line = line + helpDim.Apply("[y/n/h]")
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press y, n, or h to expand"))
+		  End If
+
+		  Return lines
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildAskOverlay() As String()
+		  // [EN] Batch 3: build overlay lines for XjAskPrompt mockup.
+		  //      State 0: active — text input with cursor and default hint
+		  //      State 1: settled — shows final answer
+		  // [TH] Batch 3: สร้าง overlay lines สำหรับ mockup XjAskPrompt
+		  //      State 0: active — input ข้อความพร้อม cursor และ default hint
+		  //      State 1: settled — แสดงคำตอบสุดท้าย
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjAskPrompt Demo"))
+		  lines.Add("")
+
+		  Var prefixGreen As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  Var prefixBold As XjStyle = prefixGreen.SetBold
+		  Var qStyle As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_WHITE)
+		  Var qBold As XjStyle = qStyle.SetBold
+		  Var ansStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var helpDim As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_BLACK)
+		  Var cursorInv As XjStyle = base.SetInverse
+
+		  If mPromptState = 0 Then
+		    Var line As String = "  " + prefixBold.Apply("?") + " "
+		    line = line + qBold.Apply("What is your name?")
+		    If mPromptInput = "" Then
+		      line = line + " " + helpDim.Apply("(John)") + " " + cursorInv.Apply(" ")
+		    Else
+		      line = line + " " + mPromptInput + cursorInv.Apply(" ")
+		    End If
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Type text, Enter to submit, Backspace to delete"))
+		  Else
+		    Var checkMark As String = Chr(&h2714)
+		    Var line As String = "  " + prefixBold.Apply(checkMark) + " "
+		    line = line + qBold.Apply("What is your name?") + " "
+		    line = line + ansStyle.Apply(mPromptAnswer)
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press any key to reset"))
+		  End If
+
+		  Return lines
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildEnumOverlay() As String()
+		  // [EN] Batch 3: build overlay lines for XjEnumSelectPrompt mockup.
+		  //      State 0: active — numbered list with input line
+		  //      State 1: settled — shows selected choice
+		  // [TH] Batch 3: สร้าง overlay lines สำหรับ mockup XjEnumSelectPrompt
+		  //      State 0: active — รายการลำดับเลขพร้อม input line
+		  //      State 1: settled — แสดง choice ที่เลือก
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjEnumSelectPrompt Demo"))
+		  lines.Add("")
+
+		  Var prefixGreen As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  Var prefixBold As XjStyle = prefixGreen.SetBold
+		  Var qStyle As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_WHITE)
+		  Var qBold As XjStyle = qStyle.SetBold
+		  Var ansStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var helpDim As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_BLACK)
+		  Var activeClr As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var cursorInv As XjStyle = base.SetInverse
+
+		  If mPromptState = 0 Then
+		    Var qLine As String = "  " + prefixBold.Apply("?") + " "
+		    qLine = qLine + qBold.Apply("What action?")
+		    lines.Add(qLine)
+		    lines.Add("    " + activeClr.Apply("1") + ") Save")
+		    lines.Add("    " + activeClr.Apply("2") + ") Load")
+		    lines.Add("    " + activeClr.Apply("3") + ") Quit")
+		    Var inputLine As String = "  Enter number: "
+		    If mPromptInput <> "" Then
+		      inputLine = inputLine + mPromptInput
+		    End If
+		    inputLine = inputLine + cursorInv.Apply(" ")
+		    lines.Add(inputLine)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press 1-3 then Enter"))
+		  Else
+		    Var line As String = "  " + prefixBold.Apply("?") + " "
+		    line = line + qBold.Apply("What action?") + " "
+		    line = line + ansStyle.Apply(mPromptAnswer)
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press any key to reset"))
+		  End If
+
+		  Return lines
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleConfirmDemoKey(key As XjKeyEvent)
+		  // [EN] Batch 3: key handler for XjConfirmPrompt demo.
+		  //      Active: Y→Yes, N→No. Settled: any key resets.
+		  // [TH] Batch 3: key handler สำหรับ demo XjConfirmPrompt
+		  //      Active: Y→Yes, N→No. Settled: กด key ใดๆ รีเซ็ต
+		  If mPromptState = 1 Then
+		    mPromptState = 0
+		    mPromptAnswer = ""
+		    mOverlayLines = BuildConfirmOverlay()
+		    Return
+		  End If
+		  If key.Char = "y" Or key.Char = "Y" Then
+		    mPromptState = 1
+		    mPromptAnswer = "Yes"
+		    mOverlayLines = BuildConfirmOverlay()
+		  ElseIf key.Char = "n" Or key.Char = "N" Then
+		    mPromptState = 1
+		    mPromptAnswer = "No"
+		    mOverlayLines = BuildConfirmOverlay()
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleKeyPressDemoKey(key As XjKeyEvent)
+		  // [EN] Batch 3: key handler for XjKeyPressPrompt demo.
+		  //      Active: captures any key and shows its name. Settled: any key resets.
+		  //      Uses XjKeyEvent.KeyName() for display.
+		  // [TH] Batch 3: key handler สำหรับ demo XjKeyPressPrompt
+		  //      Active: จับ key ใดๆ แล้วแสดงชื่อ Settled: กด key ใดๆ รีเซ็ต
+		  //      ใช้ XjKeyEvent.KeyName() สำหรับการแสดงผล
+		  If mPromptState = 1 Then
+		    mPromptState = 0
+		    mPromptAnswer = ""
+		    mOverlayLines = BuildKeyPressOverlay()
+		    Return
+		  End If
+		  // [EN] Capture key and show its name
+		  // [TH] จับ key และแสดงชื่อ
+		  mPromptState = 1
+		  mPromptAnswer = key.KeyName()
+		  mOverlayLines = BuildKeyPressOverlay()
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleExpandDemoKey(key As XjKeyEvent)
+		  // [EN] Batch 3: key handler for XjExpandPrompt demo.
+		  //      Active collapsed: h expands, y/n selects.
+		  //      Active expanded: y/n selects.
+		  //      Settled: any key resets.
+		  // [TH] Batch 3: key handler สำหรับ demo XjExpandPrompt
+		  //      Active ย่อ: h ขยาย, y/n เลือก
+		  //      Active ขยาย: y/n เลือก
+		  //      Settled: กด key ใดๆ รีเซ็ต
+		  If mPromptState = 1 Then
+		    mPromptState = 0
+		    mPromptAnswer = ""
+		    mExpandExpanded = False
+		    mOverlayLines = BuildExpandOverlay()
+		    Return
+		  End If
+		  If key.Char = "h" Or key.Char = "H" Then
+		    mExpandExpanded = Not mExpandExpanded
+		    mOverlayLines = BuildExpandOverlay()
+		  ElseIf key.Char = "y" Or key.Char = "Y" Then
+		    mPromptState = 1
+		    mPromptAnswer = "Yes"
+		    mOverlayLines = BuildExpandOverlay()
+		  ElseIf key.Char = "n" Or key.Char = "N" Then
+		    mPromptState = 1
+		    mPromptAnswer = "No"
+		    mOverlayLines = BuildExpandOverlay()
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleAskDemoKey(key As XjKeyEvent)
+		  // [EN] Batch 3: key handler for XjAskPrompt demo.
+		  //      Active: printable chars append to mPromptInput, Backspace deletes last char,
+		  //      Enter submits (uses default "John" if empty). Settled: any key resets.
+		  // [TH] Batch 3: key handler สำหรับ demo XjAskPrompt
+		  //      Active: ตัวอักษรที่พิมพ์ได้ต่อท้าย mPromptInput, Backspace ลบตัวสุดท้าย,
+		  //      Enter ส่ง (ใช้ "John" เป็นค่าเริ่มต้นถ้าว่าง) Settled: กด key ใดๆ รีเซ็ต
+		  If mPromptState = 1 Then
+		    mPromptState = 0
+		    mPromptInput = ""
+		    mPromptAnswer = ""
+		    mOverlayLines = BuildAskOverlay()
+		    Return
+		  End If
+		  If key.KeyCode = XjKeyEvent.KEY_ENTER Then
+		    mPromptState = 1
+		    If mPromptInput = "" Then
+		      mPromptAnswer = "John"
+		    Else
+		      mPromptAnswer = mPromptInput
+		    End If
+		    mOverlayLines = BuildAskOverlay()
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_BACKSPACE Then
+		    If mPromptInput.Length > 0 Then
+		      mPromptInput = mPromptInput.Left(mPromptInput.Length - 1)
+		      mOverlayLines = BuildAskOverlay()
+		    End If
+		  ElseIf key.Char <> "" And key.Char >= " " Then
+		    mPromptInput = mPromptInput + key.Char
+		    mOverlayLines = BuildAskOverlay()
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleEnumDemoKey(key As XjKeyEvent)
+		  // [EN] Batch 3: key handler for XjEnumSelectPrompt demo.
+		  //      Active: digit keys (1-3) build input, Backspace deletes last digit,
+		  //      Enter validates and selects. Settled: any key resets.
+		  // [TH] Batch 3: key handler สำหรับ demo XjEnumSelectPrompt
+		  //      Active: ปุ่มตัวเลข (1-3) สร้าง input, Backspace ลบตัวสุดท้าย,
+		  //      Enter ตรวจสอบและเลือก Settled: กด key ใดๆ รีเซ็ต
+		  If mPromptState = 1 Then
+		    mPromptState = 0
+		    mPromptInput = ""
+		    mPromptAnswer = ""
+		    mOverlayLines = BuildEnumOverlay()
+		    Return
+		  End If
+		  If key.KeyCode = XjKeyEvent.KEY_ENTER Then
+		    Var n As Integer = Val(mPromptInput)
+		    If n >= 1 And n <= 3 Then
+		      mPromptState = 1
+		      Select Case n
+		      Case 1
+		        mPromptAnswer = "Save"
+		      Case 2
+		        mPromptAnswer = "Load"
+		      Case 3
+		        mPromptAnswer = "Quit"
+		      End Select
+		      mOverlayLines = BuildEnumOverlay()
+		    End If
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_BACKSPACE Then
+		    If mPromptInput.Length > 0 Then
+		      mPromptInput = mPromptInput.Left(mPromptInput.Length - 1)
+		      mOverlayLines = BuildEnumOverlay()
+		    End If
+		  ElseIf key.Char >= "0" And key.Char <= "9" Then
+		    mPromptInput = mPromptInput + key.Char
+		    mOverlayLines = BuildEnumOverlay()
 		  End If
 		End Sub
 	#tag EndMethod
@@ -1444,6 +1899,30 @@ Inherits ConsoleApplication
 
 	#tag Property, Flags = &h21
 		Private mTermWidth As Integer
+	#tag EndProperty
+
+	// [EN] mPromptState     — 0=active (waiting for input), 1=settled (answer shown)
+	// [EN] mPromptInput     — typed text buffer for ask/enum prompt demos
+	// [EN] mPromptAnswer    — final answer string shown in settled state
+	// [EN] mExpandExpanded  — True when expand prompt demo shows full choice list
+	// [TH] mPromptState     — 0=active (รอ input), 1=settled (แสดงคำตอบแล้ว)
+	// [TH] mPromptInput     — บัฟเฟอร์ข้อความที่พิมพ์สำหรับ demo ask/enum prompt
+	// [TH] mPromptAnswer    — คำตอบสุดท้ายที่แสดงในสถานะ settled
+	// [TH] mExpandExpanded  — True เมื่อ expand prompt demo แสดง choice list เต็ม
+	#tag Property, Flags = &h21
+		Private mPromptState As Integer
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mPromptInput As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mPromptAnswer As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mExpandExpanded As Boolean
 	#tag EndProperty
 
 

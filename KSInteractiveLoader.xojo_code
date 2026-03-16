@@ -2,7 +2,10 @@
 // [EN] KSInteractiveLoader — determines which live demo widget corresponds to a
 //      component entry and configures it. Returns a "demo type" key that KSApp
 //      uses to route keys and drive ticks to the correct pre-built widget.
-//      Demo types: "textinput" | "progressbar" | "spinner" | "keyevent" | "text" | "table" | "tree" | "pie" | "style" | "color" | "canvas" | "mockup" | ""
+//      Demo types: "textinput" | "progressbar" | "spinner" | "keyevent" | "text" | "table" | "tree"
+//                | "pie" | "style" | "color" | "canvas"
+//                | "confirm" | "keypress" | "expand" | "ask" | "enum"
+//                | "mockup" | ""
 // [TH] KSInteractiveLoader — กำหนด demo widget ที่ใช้สำหรับ component entry
 //      และกำหนดค่าเริ่มต้น คืนค่า "demo type" เพื่อให้ KSApp ส่ง key และ tick
 //      ไปยัง widget ที่สร้างไว้ล่วงหน้าอย่างถูกต้อง
@@ -54,6 +57,26 @@ Protected Module KSInteractiveLoader
 		    // [EN] Batch 2: canvas concept overlay demo
 		    // [TH] Batch 2: demo overlay แนวคิด canvas
 		    Return "canvas"
+		  Case "XjConfirmPrompt"
+		    // [EN] Batch 3: confirm prompt overlay mockup
+		    // [TH] Batch 3: demo overlay mockup confirm prompt
+		    Return "confirm"
+		  Case "XjKeyPressPrompt"
+		    // [EN] Batch 3: keypress prompt overlay mockup
+		    // [TH] Batch 3: demo overlay mockup keypress prompt
+		    Return "keypress"
+		  Case "XjExpandPrompt"
+		    // [EN] Batch 3: expand prompt overlay mockup
+		    // [TH] Batch 3: demo overlay mockup expand prompt
+		    Return "expand"
+		  Case "XjAskPrompt"
+		    // [EN] Batch 3: ask prompt overlay mockup
+		    // [TH] Batch 3: demo overlay mockup ask prompt
+		    Return "ask"
+		  Case "XjEnumSelectPrompt"
+		    // [EN] Batch 3: enum select prompt overlay mockup
+		    // [TH] Batch 3: demo overlay mockup enum select prompt
+		    Return "enum"
 		  Case Else
 		    // [EN] Prompts and all other IsInteractive entries: show a mockup
 		    // [TH] Prompt และ entry IsInteractive อื่นๆ: แสดง mockup
