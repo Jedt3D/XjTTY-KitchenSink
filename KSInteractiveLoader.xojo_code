@@ -5,6 +5,7 @@
 //      Demo types: "textinput" | "progressbar" | "spinner" | "keyevent" | "text" | "table" | "tree"
 //                | "pie" | "style" | "color" | "canvas"
 //                | "confirm" | "keypress" | "expand" | "ask" | "enum"
+//                | "select" | "multiselect" | "suggest" | "collect"
 //                | "mockup" | ""
 // [TH] KSInteractiveLoader — กำหนด demo widget ที่ใช้สำหรับ component entry
 //      และกำหนดค่าเริ่มต้น คืนค่า "demo type" เพื่อให้ KSApp ส่ง key และ tick
@@ -77,6 +78,22 @@ Protected Module KSInteractiveLoader
 		    // [EN] Batch 3: enum select prompt overlay mockup
 		    // [TH] Batch 3: demo overlay mockup enum select prompt
 		    Return "enum"
+		  Case "XjSelectPrompt"
+		    // [EN] Batch 4: select prompt overlay mockup (arrow list)
+		    // [TH] Batch 4: demo overlay mockup select prompt (รายการลูกศร)
+		    Return "select"
+		  Case "XjMultiSelectPrompt"
+		    // [EN] Batch 4: multi-select prompt overlay mockup (checkbox list)
+		    // [TH] Batch 4: demo overlay mockup multi-select prompt (รายการ checkbox)
+		    Return "multiselect"
+		  Case "XjSuggestPrompt"
+		    // [EN] Batch 4: suggest prompt overlay mockup (autocomplete)
+		    // [TH] Batch 4: demo overlay mockup suggest prompt (autocomplete)
+		    Return "suggest"
+		  Case "XjCollectPrompt"
+		    // [EN] Batch 4: collect prompt overlay mockup (multi-step wizard)
+		    // [TH] Batch 4: demo overlay mockup collect prompt (wizard หลายขั้นตอน)
+		    Return "collect"
 		  Case Else
 		    // [EN] Prompts and all other IsInteractive entries: show a mockup
 		    // [TH] Prompt และ entry IsInteractive อื่นๆ: แสดง mockup

@@ -116,6 +116,15 @@ Inherits ConsoleApplication
 		    mPromptAnswer = ""
 		    mExpandExpanded = False
 		    BuildPromptOverlayLines()
+		  Case "select", "multiselect", "suggest", "collect"
+		    // [EN] Batch 4: complex prompt overlay mockups — reset all state
+		    // [TH] Batch 4: overlay mockup prompt ซับซ้อน — รีเซ็ต state ทั้งหมด
+		    mPromptState = 0
+		    mPromptInput = ""
+		    mPromptAnswer = ""
+		    mSelectIndex = 0
+		    InitBatch4State()
+		    BuildPromptOverlayLines()
 		  End Select
 		End Sub
 	#tag EndMethod
@@ -588,6 +597,14 @@ Inherits ConsoleApplication
 		      HandleAskDemoKey(key)
 		    Case "enum"
 		      HandleEnumDemoKey(key)
+		    Case "select"
+		      HandleSelectDemoKey(key)
+		    Case "multiselect"
+		      HandleMultiSelectDemoKey(key)
+		    Case "suggest"
+		      HandleSuggestDemoKey(key)
+		    Case "collect"
+		      HandleCollectDemoKey(key)
 
 		    End Select
 		    Return
@@ -782,6 +799,14 @@ Inherits ConsoleApplication
 		    Return "Type text   Enter submit"
 		  Case "enum"
 		    Return "1-3 select   Enter confirm"
+		  Case "select"
+		    Return "Up/Dn navigate   Enter select"
+		  Case "multiselect"
+		    Return "Up/Dn   Space toggle   Enter"
+		  Case "suggest"
+		    Return "Type   Tab accept   Enter"
+		  Case "collect"
+		    Return "Multi-step wizard"
 		  Case Else
 		    Return ""
 		  End Select
@@ -815,7 +840,7 @@ Inherits ConsoleApplication
 		  // [TH] ตรวจสอบว่าควร render overlay demo ทับ UI ปกติหรือไม่
 		  If mPreviewFocus Then
 		    Select Case mDemoType
-		    Case "pie", "style", "color", "canvas", "confirm", "keypress", "expand", "ask", "enum"
+		    Case "pie", "style", "color", "canvas", "confirm", "keypress", "expand", "ask", "enum", "select", "multiselect", "suggest", "collect"
 		      RenderDemoOverlay()
 		    End Select
 		  End If
@@ -859,6 +884,15 @@ Inherits ConsoleApplication
 		    mOverlayLines = BuildAskOverlay()
 		  Case "enum"
 		    mOverlayLines = BuildEnumOverlay()
+		  Case "select"
+		    mOverlayLines = BuildSelectOverlay()
+		  Case "multiselect"
+		    mOverlayLines = BuildMultiSelectOverlay()
+		  Case "suggest"
+		    UpdateSuggestFilter()
+		    mOverlayLines = BuildSuggestOverlay()
+		  Case "collect"
+		    mOverlayLines = BuildCollectOverlay()
 		  End Select
 		End Sub
 	#tag EndMethod
@@ -1265,6 +1299,619 @@ Inherits ConsoleApplication
 		  ElseIf key.Char >= "0" And key.Char <= "9" Then
 		    mPromptInput = mPromptInput + key.Char
 		    mOverlayLines = BuildEnumOverlay()
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub InitBatch4State()
+		  // [EN] Batch 4: type-specific state initialisation for complex prompt demos.
+		  //      Called from ActivateDemoWidget to set up arrays/counters per demo type.
+		  // [TH] Batch 4: เริ่มต้น state เฉพาะประเภทสำหรับ demo prompt ซับซ้อน
+		  //      เรียกจาก ActivateDemoWidget เพื่อตั้งค่า array/counter ตาม demo type
+		  Select Case mDemoType
+		  Case "multiselect"
+		    mSelectChecked.RemoveAll
+		    Var i As Integer
+		    For i = 0 To 4
+		      mSelectChecked.Add(False)
+		    Next
+		  Case "suggest"
+		    mSuggestFiltered.RemoveAll
+		  Case "collect"
+		    mCollectStep = 0
+		    mCollectAnswers.RemoveAll
+		  End Select
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub UpdateSuggestFilter()
+		  // [EN] Batch 4: rebuild mSuggestFiltered from hardcoded color list based on mPromptInput.
+		  //      Case-insensitive substring matching. Resets mSelectIndex if out of bounds.
+		  // [TH] Batch 4: สร้าง mSuggestFiltered ใหม่จากรายการสีที่กำหนดตาม mPromptInput
+		  //      จับคู่ substring ไม่สนตัวพิมพ์ รีเซ็ต mSelectIndex ถ้าเกินขอบเขต
+		  mSuggestFiltered.RemoveAll
+		  Var all() As String
+		  all.Add("Red")
+		  all.Add("Green")
+		  all.Add("Blue")
+		  all.Add("Yellow")
+		  all.Add("Cyan")
+		  all.Add("Magenta")
+		  all.Add("White")
+		  all.Add("Orange")
+		  all.Add("Purple")
+		  all.Add("Pink")
+		  Var query As String = mPromptInput.Lowercase
+		  Var i As Integer
+		  For i = 0 To all.Count - 1
+		    If query = "" Or Instr(all(i).Lowercase, query) > 0 Then
+		      mSuggestFiltered.Add(all(i))
+		    End If
+		  Next
+		  If mSelectIndex >= mSuggestFiltered.Count Then
+		    mSelectIndex = 0
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildSelectOverlay() As String()
+		  // [EN] Batch 4: build overlay for XjSelectPrompt mockup.
+		  //      Active: arrow list with ❯ marker, Up/Down navigate, Enter selects.
+		  //      Settled: shows selected choice.
+		  // [TH] Batch 4: สร้าง overlay สำหรับ mockup XjSelectPrompt
+		  //      Active: รายการลูกศรพร้อม ❯, Up/Down navigate, Enter เลือก
+		  //      Settled: แสดง choice ที่เลือก
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjSelectPrompt Demo"))
+		  lines.Add("")
+
+		  Var prefixGreen As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  Var prefixBold As XjStyle = prefixGreen.SetBold
+		  Var qStyle As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_WHITE)
+		  Var qBold As XjStyle = qStyle.SetBold
+		  Var ansStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var helpDim As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_BLACK)
+		  Var activeInv As XjStyle = base.SetInverse
+
+		  Var items() As String
+		  items.Add("React")
+		  items.Add("Vue")
+		  items.Add("Angular")
+		  items.Add("Svelte")
+		  items.Add("Ember")
+
+		  If mPromptState = 0 Then
+		    Var qLine As String = "  " + prefixBold.Apply("?") + " "
+		    qLine = qLine + qBold.Apply("Choose a framework:")
+		    lines.Add(qLine)
+		    Var marker As String = Chr(&h276F)
+		    Var i As Integer
+		    For i = 0 To items.Count - 1
+		      If i = mSelectIndex Then
+		        lines.Add("  " + ansStyle.Apply(marker) + " " + activeInv.Apply(items(i)))
+		      Else
+		        lines.Add("    " + items(i))
+		      End If
+		    Next
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Up/Dn navigate   Enter select"))
+		  Else
+		    Var line As String = "  " + prefixBold.Apply("?") + " "
+		    line = line + qBold.Apply("Choose a framework:") + " "
+		    line = line + ansStyle.Apply(mPromptAnswer)
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press any key to reset"))
+		  End If
+
+		  Return lines
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildMultiSelectOverlay() As String()
+		  // [EN] Batch 4: build overlay for XjMultiSelectPrompt mockup.
+		  //      Active: checkbox list with ■/□ symbols, Space toggles, Enter confirms.
+		  //      Settled: shows comma-separated selected items.
+		  // [TH] Batch 4: สร้าง overlay สำหรับ mockup XjMultiSelectPrompt
+		  //      Active: รายการ checkbox พร้อม ■/□, Space สลับ, Enter ยืนยัน
+		  //      Settled: แสดง item ที่เลือกคั่นด้วยเครื่องหมายจุลภาค
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjMultiSelectPrompt Demo"))
+		  lines.Add("")
+
+		  Var prefixGreen As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  Var prefixBold As XjStyle = prefixGreen.SetBold
+		  Var qStyle As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_WHITE)
+		  Var qBold As XjStyle = qStyle.SetBold
+		  Var ansStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var helpDim As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_BLACK)
+		  Var activeInv As XjStyle = base.SetInverse
+		  Var greenClr As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+
+		  Var items() As String
+		  items.Add("Cheese")
+		  items.Add("Pepperoni")
+		  items.Add("Mushrooms")
+		  items.Add("Olives")
+		  items.Add("Peppers")
+
+		  If mPromptState = 0 Then
+		    Var qLine As String = "  " + prefixBold.Apply("?") + " "
+		    qLine = qLine + qBold.Apply("Select toppings:")
+		    lines.Add(qLine)
+		    Var marker As String = Chr(&h276F)
+		    Var checked As String = Chr(&h25A0)
+		    Var unchecked As String = Chr(&h25A1)
+		    Var i As Integer
+		    For i = 0 To items.Count - 1
+		      Var box As String
+		      If mSelectChecked.Count > i And mSelectChecked(i) Then
+		        box = greenClr.Apply(checked)
+		      Else
+		        box = unchecked
+		      End If
+		      If i = mSelectIndex Then
+		        lines.Add("  " + ansStyle.Apply(marker) + " " + box + " " + activeInv.Apply(items(i)))
+		      Else
+		        lines.Add("    " + box + " " + items(i))
+		      End If
+		    Next
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Up/Dn   Space toggle   a all   n none   Enter"))
+		  Else
+		    Var line As String = "  " + prefixBold.Apply("?") + " "
+		    line = line + qBold.Apply("Select toppings:") + " "
+		    line = line + ansStyle.Apply(mPromptAnswer)
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press any key to reset"))
+		  End If
+
+		  Return lines
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildSuggestOverlay() As String()
+		  // [EN] Batch 4: build overlay for XjSuggestPrompt mockup.
+		  //      Active: text input with filtered suggestion dropdown.
+		  //      Settled: shows confirmed value.
+		  // [TH] Batch 4: สร้าง overlay สำหรับ mockup XjSuggestPrompt
+		  //      Active: input ข้อความพร้อม dropdown suggestion ที่กรองแล้ว
+		  //      Settled: แสดงค่าที่ยืนยัน
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjSuggestPrompt Demo"))
+		  lines.Add("")
+
+		  Var prefixGreen As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  Var prefixBold As XjStyle = prefixGreen.SetBold
+		  Var qStyle As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_WHITE)
+		  Var qBold As XjStyle = qStyle.SetBold
+		  Var ansStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var helpDim As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_BLACK)
+		  Var cursorInv As XjStyle = base.SetInverse
+		  Var activeInv As XjStyle = base.SetInverse
+
+		  If mPromptState = 0 Then
+		    Var inputLine As String = "  " + prefixBold.Apply("?") + " "
+		    inputLine = inputLine + qBold.Apply("Enter a color:") + " "
+		    If mPromptInput <> "" Then
+		      inputLine = inputLine + mPromptInput
+		    End If
+		    inputLine = inputLine + cursorInv.Apply(" ")
+		    lines.Add(inputLine)
+
+		    // [EN] Show filtered suggestions (max 5 visible)
+		    // [TH] แสดง suggestion ที่กรองแล้ว (สูงสุด 5 รายการ)
+		    Var marker As String = Chr(&h276F)
+		    Var maxShow As Integer = 5
+		    If mSuggestFiltered.Count > 0 Then
+		      Var showCount As Integer = mSuggestFiltered.Count
+		      If showCount > maxShow Then showCount = maxShow
+		      Var i As Integer
+		      For i = 0 To showCount - 1
+		        If i = mSelectIndex Then
+		          lines.Add("  " + ansStyle.Apply(marker) + " " + activeInv.Apply(mSuggestFiltered(i)))
+		        Else
+		          lines.Add("    " + mSuggestFiltered(i))
+		        End If
+		      Next
+		      If mSuggestFiltered.Count > maxShow Then
+		        Var remaining As Integer = mSuggestFiltered.Count - maxShow
+		        lines.Add("  " + helpDim.Apply("(" + remaining.ToString + " more)"))
+		      End If
+		    End If
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Type to filter   Tab accept   Enter confirm"))
+		  Else
+		    Var checkMark As String = Chr(&h2714)
+		    Var line As String = "  " + prefixBold.Apply(checkMark) + " "
+		    line = line + qBold.Apply("Enter a color:") + " "
+		    line = line + ansStyle.Apply(mPromptAnswer)
+		    lines.Add(line)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press any key to reset"))
+		  End If
+
+		  Return lines
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Function BuildCollectOverlay() As String()
+		  // [EN] Batch 4: build overlay for XjCollectPrompt mockup.
+		  //      Shows completed steps above current step. 3-step wizard:
+		  //      Step 0: Ask "Your name?" / Step 1: Confirm "Accept terms?" / Step 2: Select "Language:"
+		  // [TH] Batch 4: สร้าง overlay สำหรับ mockup XjCollectPrompt
+		  //      แสดงขั้นตอนที่เสร็จแล้วเหนือขั้นตอนปัจจุบัน wizard 3 ขั้นตอน:
+		  //      Step 0: Ask "Your name?" / Step 1: Confirm "Accept terms?" / Step 2: Select "Language:"
+		  Var lines() As String
+		  Var base As New XjStyle
+		  Var titleStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var titleBold As XjStyle = titleStyle.SetBold
+		  lines.Add(titleBold.Apply("XjCollectPrompt Demo"))
+		  lines.Add("")
+
+		  Var prefixGreen As XjStyle = base.SetFG(XjANSI.FG_GREEN)
+		  Var prefixBold As XjStyle = prefixGreen.SetBold
+		  Var qStyle As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_WHITE)
+		  Var qBold As XjStyle = qStyle.SetBold
+		  Var ansStyle As XjStyle = base.SetFG(XjANSI.FG_CYAN)
+		  Var helpDim As XjStyle = base.SetFG(XjANSI.FG_BRIGHT_BLACK)
+		  Var cursorInv As XjStyle = base.SetInverse
+		  Var activeInv As XjStyle = base.SetInverse
+		  Var checkMark As String = Chr(&h2714)
+
+		  // [EN] Show completed steps
+		  // [TH] แสดงขั้นตอนที่เสร็จแล้ว
+		  If mCollectAnswers.Count > 0 Then
+		    lines.Add("  " + prefixBold.Apply(checkMark) + " " + qBold.Apply("Your name?") + " " + ansStyle.Apply(mCollectAnswers(0)))
+		  End If
+		  If mCollectAnswers.Count > 1 Then
+		    lines.Add("  " + prefixBold.Apply(checkMark) + " " + qBold.Apply("Accept terms?") + " " + ansStyle.Apply(mCollectAnswers(1)))
+		  End If
+		  If mCollectAnswers.Count > 2 Then
+		    lines.Add("  " + prefixBold.Apply(checkMark) + " " + qBold.Apply("Language:") + " " + ansStyle.Apply(mCollectAnswers(2)))
+		  End If
+
+		  If mPromptState = 1 Then
+		    // [EN] All steps complete
+		    // [TH] ทุกขั้นตอนเสร็จสิ้น
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("All steps complete! Press any key to reset"))
+		    Return lines
+		  End If
+
+		  // [EN] Show current step
+		  // [TH] แสดงขั้นตอนปัจจุบัน
+		  Var stepNum As Integer = mCollectStep + 1
+		  Var stepLabel As String = "Step " + stepNum.ToString + "/3"
+		  lines.Add("  " + helpDim.Apply(stepLabel))
+
+		  Var langs() As String
+		  langs.Add("English")
+		  langs.Add("Thai")
+		  langs.Add("Japanese")
+
+		  Select Case mCollectStep
+		  Case 0
+		    Var askLine As String = "  " + prefixBold.Apply("?") + " " + qBold.Apply("Your name?")
+		    If mPromptInput = "" Then
+		      askLine = askLine + " " + cursorInv.Apply(" ")
+		    Else
+		      askLine = askLine + " " + mPromptInput + cursorInv.Apply(" ")
+		    End If
+		    lines.Add(askLine)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Type text, Enter to next step"))
+		  Case 1
+		    Var confLine As String = "  " + prefixBold.Apply("?") + " "
+		    confLine = confLine + qBold.Apply("Accept terms?") + " "
+		    confLine = confLine + helpDim.Apply("(Y/n)") + " "
+		    confLine = confLine + cursorInv.Apply(" ")
+		    lines.Add(confLine)
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Press Y or N"))
+		  Case 2
+		    Var selLine As String = "  " + prefixBold.Apply("?") + " " + qBold.Apply("Language:")
+		    lines.Add(selLine)
+		    Var marker As String = Chr(&h276F)
+		    Var i As Integer
+		    For i = 0 To langs.Count - 1
+		      If i = mSelectIndex Then
+		        lines.Add("  " + ansStyle.Apply(marker) + " " + activeInv.Apply(langs(i)))
+		      Else
+		        lines.Add("    " + langs(i))
+		      End If
+		    Next
+		    lines.Add("")
+		    lines.Add("  " + helpDim.Apply("Up/Dn navigate   Enter select"))
+		  End Select
+
+		  Return lines
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleSelectDemoKey(key As XjKeyEvent)
+		  // [EN] Batch 4: key handler for XjSelectPrompt demo.
+		  //      Up/Down navigate, Enter selects. Settled: any key resets.
+		  // [TH] Batch 4: key handler สำหรับ demo XjSelectPrompt
+		  //      Up/Down navigate, Enter เลือก Settled: กด key ใดๆ รีเซ็ต
+		  If mPromptState = 1 Then
+		    mPromptState = 0
+		    mSelectIndex = 0
+		    mPromptAnswer = ""
+		    mOverlayLines = BuildSelectOverlay()
+		    Return
+		  End If
+		  If key.KeyCode = XjKeyEvent.KEY_UP Then
+		    If mSelectIndex > 0 Then
+		      mSelectIndex = mSelectIndex - 1
+		    Else
+		      mSelectIndex = 4
+		    End If
+		    mOverlayLines = BuildSelectOverlay()
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_DOWN Then
+		    If mSelectIndex < 4 Then
+		      mSelectIndex = mSelectIndex + 1
+		    Else
+		      mSelectIndex = 0
+		    End If
+		    mOverlayLines = BuildSelectOverlay()
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_ENTER Then
+		    Var items() As String
+		    items.Add("React")
+		    items.Add("Vue")
+		    items.Add("Angular")
+		    items.Add("Svelte")
+		    items.Add("Ember")
+		    mPromptState = 1
+		    mPromptAnswer = items(mSelectIndex)
+		    mOverlayLines = BuildSelectOverlay()
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleMultiSelectDemoKey(key As XjKeyEvent)
+		  // [EN] Batch 4: key handler for XjMultiSelectPrompt demo.
+		  //      Up/Down navigate, Space toggles, a=all, n=none, Enter confirms.
+		  // [TH] Batch 4: key handler สำหรับ demo XjMultiSelectPrompt
+		  //      Up/Down navigate, Space สลับ, a=เลือกทั้งหมด, n=ยกเลิกทั้งหมด, Enter ยืนยัน
+		  If mPromptState = 1 Then
+		    mPromptState = 0
+		    mSelectIndex = 0
+		    mPromptAnswer = ""
+		    Var k As Integer
+		    For k = 0 To mSelectChecked.Count - 1
+		      mSelectChecked(k) = False
+		    Next
+		    mOverlayLines = BuildMultiSelectOverlay()
+		    Return
+		  End If
+		  If key.KeyCode = XjKeyEvent.KEY_UP Then
+		    If mSelectIndex > 0 Then
+		      mSelectIndex = mSelectIndex - 1
+		    Else
+		      mSelectIndex = 4
+		    End If
+		    mOverlayLines = BuildMultiSelectOverlay()
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_DOWN Then
+		    If mSelectIndex < 4 Then
+		      mSelectIndex = mSelectIndex + 1
+		    Else
+		      mSelectIndex = 0
+		    End If
+		    mOverlayLines = BuildMultiSelectOverlay()
+		  ElseIf key.Char = " " Then
+		    If mSelectIndex < mSelectChecked.Count Then
+		      mSelectChecked(mSelectIndex) = Not mSelectChecked(mSelectIndex)
+		    End If
+		    mOverlayLines = BuildMultiSelectOverlay()
+		  ElseIf key.Char = "a" Or key.Char = "A" Then
+		    Var k As Integer
+		    For k = 0 To mSelectChecked.Count - 1
+		      mSelectChecked(k) = True
+		    Next
+		    mOverlayLines = BuildMultiSelectOverlay()
+		  ElseIf key.Char = "n" Or key.Char = "N" Then
+		    Var k As Integer
+		    For k = 0 To mSelectChecked.Count - 1
+		      mSelectChecked(k) = False
+		    Next
+		    mOverlayLines = BuildMultiSelectOverlay()
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_ENTER Then
+		    Var items() As String
+		    items.Add("Cheese")
+		    items.Add("Pepperoni")
+		    items.Add("Mushrooms")
+		    items.Add("Olives")
+		    items.Add("Peppers")
+		    Var selected() As String
+		    Var k As Integer
+		    For k = 0 To mSelectChecked.Count - 1
+		      If mSelectChecked(k) Then selected.Add(items(k))
+		    Next
+		    If selected.Count > 0 Then
+		      mPromptState = 1
+		      mPromptAnswer = String.FromArray(selected, ", ")
+		      mOverlayLines = BuildMultiSelectOverlay()
+		    End If
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleSuggestDemoKey(key As XjKeyEvent)
+		  // [EN] Batch 4: key handler for XjSuggestPrompt demo.
+		  //      Type to filter, Tab accepts suggestion, Up/Down navigate, Enter confirms.
+		  // [TH] Batch 4: key handler สำหรับ demo XjSuggestPrompt
+		  //      พิมพ์เพื่อกรอง, Tab รับ suggestion, Up/Down navigate, Enter ยืนยัน
+		  If mPromptState = 1 Then
+		    mPromptState = 0
+		    mPromptInput = ""
+		    mPromptAnswer = ""
+		    mSelectIndex = 0
+		    UpdateSuggestFilter()
+		    mOverlayLines = BuildSuggestOverlay()
+		    Return
+		  End If
+		  If key.KeyCode = XjKeyEvent.KEY_ENTER Then
+		    If mPromptInput <> "" Then
+		      mPromptState = 1
+		      mPromptAnswer = mPromptInput
+		      mOverlayLines = BuildSuggestOverlay()
+		    End If
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_TAB Then
+		    If mSuggestFiltered.Count > 0 And mSelectIndex < mSuggestFiltered.Count Then
+		      mPromptInput = mSuggestFiltered(mSelectIndex)
+		      UpdateSuggestFilter()
+		      mOverlayLines = BuildSuggestOverlay()
+		    End If
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_UP Then
+		    If mSuggestFiltered.Count > 0 Then
+		      If mSelectIndex > 0 Then
+		        mSelectIndex = mSelectIndex - 1
+		      Else
+		        mSelectIndex = mSuggestFiltered.Count - 1
+		        If mSelectIndex > 4 Then mSelectIndex = 4
+		      End If
+		      mOverlayLines = BuildSuggestOverlay()
+		    End If
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_DOWN Then
+		    If mSuggestFiltered.Count > 0 Then
+		      Var maxIdx As Integer = mSuggestFiltered.Count - 1
+		      If maxIdx > 4 Then maxIdx = 4
+		      If mSelectIndex < maxIdx Then
+		        mSelectIndex = mSelectIndex + 1
+		      Else
+		        mSelectIndex = 0
+		      End If
+		      mOverlayLines = BuildSuggestOverlay()
+		    End If
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_BACKSPACE Then
+		    If mPromptInput.Length > 0 Then
+		      mPromptInput = mPromptInput.Left(mPromptInput.Length - 1)
+		      mSelectIndex = 0
+		      UpdateSuggestFilter()
+		      mOverlayLines = BuildSuggestOverlay()
+		    End If
+		  ElseIf key.Char <> "" And key.Char >= " " Then
+		    mPromptInput = mPromptInput + key.Char
+		    mSelectIndex = 0
+		    UpdateSuggestFilter()
+		    mOverlayLines = BuildSuggestOverlay()
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleCollectDemoKey(key As XjKeyEvent)
+		  // [EN] Batch 4: key handler for XjCollectPrompt demo.
+		  //      Routes to step-specific logic. All-done: any key resets.
+		  // [TH] Batch 4: key handler สำหรับ demo XjCollectPrompt
+		  //      ส่งต่อไปยัง logic เฉพาะขั้นตอน เสร็จทั้งหมด: กด key ใดๆ รีเซ็ต
+		  If mPromptState = 1 Then
+		    mPromptState = 0
+		    mPromptInput = ""
+		    mSelectIndex = 0
+		    mCollectStep = 0
+		    mCollectAnswers.RemoveAll
+		    mOverlayLines = BuildCollectOverlay()
+		    Return
+		  End If
+		  Select Case mCollectStep
+		  Case 0
+		    HandleCollectAskStep(key)
+		  Case 1
+		    HandleCollectConfirmStep(key)
+		  Case 2
+		    HandleCollectSelectStep(key)
+		  End Select
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleCollectAskStep(key As XjKeyEvent)
+		  // [EN] Batch 4: collect step 0 — text input for "Your name?"
+		  // [TH] Batch 4: collect ขั้นตอน 0 — input ข้อความสำหรับ "Your name?"
+		  If key.KeyCode = XjKeyEvent.KEY_ENTER Then
+		    If mPromptInput <> "" Then
+		      mCollectAnswers.Add(mPromptInput)
+		      mPromptInput = ""
+		      mCollectStep = 1
+		      mOverlayLines = BuildCollectOverlay()
+		    End If
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_BACKSPACE Then
+		    If mPromptInput.Length > 0 Then
+		      mPromptInput = mPromptInput.Left(mPromptInput.Length - 1)
+		      mOverlayLines = BuildCollectOverlay()
+		    End If
+		  ElseIf key.Char <> "" And key.Char >= " " Then
+		    mPromptInput = mPromptInput + key.Char
+		    mOverlayLines = BuildCollectOverlay()
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleCollectConfirmStep(key As XjKeyEvent)
+		  // [EN] Batch 4: collect step 1 — Y/N for "Accept terms?"
+		  // [TH] Batch 4: collect ขั้นตอน 1 — Y/N สำหรับ "Accept terms?"
+		  If key.Char = "y" Or key.Char = "Y" Then
+		    mCollectAnswers.Add("Yes")
+		    mSelectIndex = 0
+		    mCollectStep = 2
+		    mOverlayLines = BuildCollectOverlay()
+		  ElseIf key.Char = "n" Or key.Char = "N" Then
+		    mCollectAnswers.Add("No")
+		    mSelectIndex = 0
+		    mCollectStep = 2
+		    mOverlayLines = BuildCollectOverlay()
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub HandleCollectSelectStep(key As XjKeyEvent)
+		  // [EN] Batch 4: collect step 2 — select "Language:" from list
+		  // [TH] Batch 4: collect ขั้นตอน 2 — เลือก "Language:" จากรายการ
+		  If key.KeyCode = XjKeyEvent.KEY_UP Then
+		    If mSelectIndex > 0 Then
+		      mSelectIndex = mSelectIndex - 1
+		    Else
+		      mSelectIndex = 2
+		    End If
+		    mOverlayLines = BuildCollectOverlay()
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_DOWN Then
+		    If mSelectIndex < 2 Then
+		      mSelectIndex = mSelectIndex + 1
+		    Else
+		      mSelectIndex = 0
+		    End If
+		    mOverlayLines = BuildCollectOverlay()
+		  ElseIf key.KeyCode = XjKeyEvent.KEY_ENTER Then
+		    Var langs() As String
+		    langs.Add("English")
+		    langs.Add("Thai")
+		    langs.Add("Japanese")
+		    mCollectAnswers.Add(langs(mSelectIndex))
+		    mPromptState = 1
+		    mOverlayLines = BuildCollectOverlay()
 		  End If
 		End Sub
 	#tag EndMethod
@@ -1923,6 +2570,36 @@ Inherits ConsoleApplication
 
 	#tag Property, Flags = &h21
 		Private mExpandExpanded As Boolean
+	#tag EndProperty
+
+	// [EN] mSelectIndex      — cursor position in select/multiselect/suggest/collect demos (0-based)
+	// [EN] mSelectChecked    — checkbox states for multiselect demo (parallel to item list)
+	// [EN] mCollectStep      — current step index in collect demo (0=ask, 1=confirm, 2=select)
+	// [EN] mCollectAnswers   — completed answers for each collect step
+	// [EN] mSuggestFiltered  — cached filtered suggestion list for suggest demo
+	// [TH] mSelectIndex      — ตำแหน่ง cursor ใน demo select/multiselect/suggest/collect (0-based)
+	// [TH] mSelectChecked    — สถานะ checkbox สำหรับ demo multiselect (ขนานกับรายการ item)
+	// [TH] mCollectStep      — index ขั้นตอนปัจจุบันใน demo collect (0=ask, 1=confirm, 2=select)
+	// [TH] mCollectAnswers   — คำตอบที่เสร็จแล้วสำหรับแต่ละขั้นตอน collect
+	// [TH] mSuggestFiltered  — รายการ suggestion ที่กรองแล้วสำหรับ demo suggest
+	#tag Property, Flags = &h21
+		Private mSelectIndex As Integer
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mSelectChecked() As Boolean
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mCollectStep As Integer
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mCollectAnswers() As String
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mSuggestFiltered() As String
 	#tag EndProperty
 
 

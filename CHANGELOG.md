@@ -36,6 +36,53 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `XjCell.SetStyle()`: uses `CopyFrom()` instead of `Clone()` to avoid per-call allocation
   - `XjCanvas.Render()`: rewritten from single ~10,000-entry array to per-row string building
 
+### Added — Batch 4: Complex Prompt Overlays (XjSelectPrompt, XjMultiSelectPrompt, XjSuggestPrompt, XjCollectPrompt)
+
+- **XjSelectPrompt overlay** (`"select"` type): arrow-key navigated list with `❯` marker
+  and inverse highlight; 5 sample items (React, Vue, Angular, Svelte, Ember); Enter selects
+- **XjMultiSelectPrompt overlay** (`"multiselect"` type): checkbox list with `■`/`□` markers;
+  Space toggles, `a` selects all, `n` selects none; Enter confirms (requires ≥1 selected)
+- **XjSuggestPrompt overlay** (`"suggest"` type): text input with filtered dropdown from
+  10 color names; typing filters suggestions, Tab accepts highlighted item, Up/Down navigate
+  visible list (max 5), Enter confirms
+- **XjCollectPrompt overlay** (`"collect"` type): 3-step wizard — Step 1: text input (name),
+  Step 2: Y/N confirm (terms), Step 3: select from list (language); completed steps show `✔`
+- New properties: `mSelectIndex`, `mSelectChecked()`, `mCollectStep`, `mCollectAnswers()`,
+  `mSuggestFiltered()` for complex prompt state management
+- `InitBatch4State()`: type-specific state initializer for multiselect/suggest/collect
+- `UpdateSuggestFilter()`: filters suggestion list based on typed input
+
+### Added — Batch 3: Simple Prompt Overlays (XjConfirmPrompt, XjKeyPressPrompt, XjExpandPrompt, XjAskPrompt, XjEnumSelectPrompt)
+
+- **XjConfirmPrompt overlay** (`"confirm"` type): shows `? Are you sure? (Y/n)`;
+  press Y or N to settle with green checkmark answer
+- **XjKeyPressPrompt overlay** (`"keypress"` type): shows `? Press any key to continue...`;
+  any key settles and displays the key name
+- **XjExpandPrompt overlay** (`"expand"` type): collapsed `(ynadh)` key choices;
+  press `h` to expand full list, then select with y/n/a/d keys
+- **XjAskPrompt overlay** (`"ask"` type): text input with cursor; type name, Enter settles
+  (requires non-empty input); Backspace deletes
+- **XjEnumSelectPrompt overlay** (`"enum"` type): numbered list of 4 log levels;
+  press 1–4 digit to select and settle
+- Shared prompt overlay infrastructure: `mPromptState` (0=active, 1=settled),
+  `mPromptInput`, `mPromptAnswer`, `mExpandExpanded`
+- `BuildPromptOverlayLines()`: dispatcher routing `mDemoType` to per-prompt builders
+
+### Added — Batch 2: Rendered-Output Demos (XjPie, XjStyle, XjColor, XjCanvas)
+
+- **XjPie overlay demo** (`"pie"` type): pie chart with 3 switchable datasets
+  (Languages, Browsers, OS); keys `1`/`2`/`3` switch datasets; shows colored slices
+  with percentages and legend
+- **XjStyle overlay demo** (`"style"` type): ANSI style showcase displaying bold, dim,
+  italic, underline, strikethrough, inverse, blink, and color combinations
+- **XjColor overlay demo** (`"color"` type): 16 standard ANSI colors displayed as
+  colored blocks with labels; foreground and background pairs
+- **XjCanvas overlay demo** (`"canvas"` type): rendered canvas concept art showing
+  block-character drawing with box-drawing frame
+- `RenderDemoOverlay()`: generalized overlay renderer using ANSI cursor positioning;
+  draws bordered box with title, content lines, and hint row over the preview area
+- `mOverlayLines() As String`: shared overlay content buffer used by all overlay demos
+
 ### Added — Project Walkthrough
 
 - `KitchenSink Walk Through.md`: comprehensive project walkthrough covering architecture,
