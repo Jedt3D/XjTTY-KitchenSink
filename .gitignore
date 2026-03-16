@@ -1,3 +1,10 @@
 .DS_Store
-*.xojo_user_properties
-Builds/
+Builds*/
+CHANGELOG.md
+DEV_CODE_WALKTHROUGH.md
+OPTIMIZATION_PLAN.md
+TEAM_WORKFLOW.md
+CLAUDE.md
+KITCHEN_SINK_PROPOSAL.md
+.claude
+xojo_controller.applescript

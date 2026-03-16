@@ -25,6 +25,7 @@ Built as a Xojo Console application using only the `XjTTYLib/` library — no mo
 - **Xojo 2025** or later
 - Terminal: minimum **80×24** columns/rows
 - macOS (primary), Linux (likely supported via XjTTYLib)
+- XjTTYLib from (https://github.com/Jedt3D/XjTTY-Toolkit) **Important**
 
 ---
 
@@ -39,10 +40,7 @@ XjTTY-KitchenSink/
 ├── KSPreviewBuilder.xojo_code     — Stateless factory for preview widgets
 ├── KSInteractiveLoader.xojo_code  — Maps components to live demo types
 ├── XjTTYLib → ../xojo-ttytoolkit/XjTTYLib/  — Alias to shared toolkit (59 components)
-├── KITCHEN_SINK_PROPOSAL.md       — Full build specification
-├── CHANGELOG.md                   — Version history
-├── DEV_CODE_WALKTHROUGH.md        — Code walkthrough for developers
-└── TEAM_WORKFLOW.md               — Development team roles and process
+└── README.md                      — This file
 ```
 
 ---
@@ -50,22 +48,22 @@ XjTTY-KitchenSink/
 ## Layout
 
 ```
-┌─ XjTTY-Toolkit Kitchen Sink ──────────────────────── v0.7.0 │ 2026-03-13 ─┐
+┌─ XjTTY-Toolkit Kitchen Sink ──────────────────────────  v0.7.0 │ 2026-03-13 ─┐
 │                                                                              │
 ├──────────────────────┬───────────────────────────────────────────────────────┤
-│ Search: [__________] │ Current: XjProgressBar                               │
+│ Search: [__________] │ Current: XjProgressBar                                │
 ├──────────────────────┼───────────────────────────────────────────────────────┤
-│ ▸ Widgets            │  ┌─ Preview ──────────────────────────────────────┐  │
-│   ├── XjBox          │  │  ████████████░░░░░░░░  65% [6.5/10]           │  │
-│   ├── XjProgressBar  │  └────────────────────────────────────────────────┘  │
-│   └── ...            │  ┌─ Properties ───────────────────────────────────┐  │
-│ ▸ Styling            │  │ Value: 65   Total: 100   Mode: Determinate     │  │
-│ ▸ Prompts            │  └────────────────────────────────────────────────┘  │
+│ ▸ Widgets            │  ┌─ Preview ───────────────────────────────────────┐  │
+│   ├── XjBox          │  │  ████████████░░░░░░░░  65% [6.5/10]             │  │
+│   ├── XjProgressBar  │  └─────────────────────────────────────────────────┘  │
+│   └── ...            │  ┌─ Properties ───────────────────────────────────┐   │
+│ ▸ Styling            │  │ Value: 65   Total: 100   Mode: Determinate     │   │
+│ ▸ Prompts            │  └────────────────────────────────────────────────┘   │
 │ ▸ Utilities          │                                                       │
 │ ▸ Foundation         │                                                       │
 │ ▸ Layout             │                                                       │
 ├──────────────────────┴───────────────────────────────────────────────────────┤
-│ XjProgressBar — Progress bar with format tokens │ ←/→:adjust  Space:mode   │
+│ XjProgressBar — Progress bar with format tokens │ ←/→:adjust  Space:mode     │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -108,14 +106,6 @@ Open `KitchenSink.xojo_project` in Xojo IDE and run, or use the helper script:
 ```bash
 ./xojo.sh run
 ```
-
----
-
-## Development
-
-See [`TEAM_WORKFLOW.md`](TEAM_WORKFLOW.md) for team roles and the phase-by-phase development process.
-
-See [`DEV_CODE_WALKTHROUGH.md`](DEV_CODE_WALKTHROUGH.md) for a guided tour of the codebase.
 
 ---
 
