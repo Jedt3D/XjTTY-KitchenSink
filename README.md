@@ -23,18 +23,15 @@
 
 ## Screenshots
 
-> Add your own screenshots here. Run the app and use your OS screenshot tool.
->
-> Suggested captures:
-> - Main view with component list and preview
-> - XjProgressBar live demo (Tab into it, press +/- to adjust)
-> - XjFont block-art demo (Tab into it, type "HELLO")
-> - Help overlay (press ?)
-> - Search mode (press /, type "prompt")
-> - Overlay mockup (navigate to XjConfirmPrompt, press Tab)
+![XjMultiSelectPrompt](development%20docs/XjMultiSelectPrompt.jpg)
+![XjPie](development%20docs/XjPie.jpg)
+![XjStyle](development%20docs/XjStyle.jpg)
+![XjTable](development%20docs/XjTable.jpg)
 
+
+**Sketch design in the beginning**
 ```
-┌─ XjTTY-Toolkit Kitchen Sink ─────────────────────────── v0.8.1 │ 2026-03-17 ─┐
+┌─ XjTTY-Toolkit Kitchen Sink ───────────────────────────── v0.8.1 │ 2026-03-17 ─┐
 │                                                                                │
 ├─ Search ──────────────┬─ Preview ──────────────────────────────────────────────┤
 │ [___________________ ]│ XjProgressBar  [Widgets]                               │
@@ -44,7 +41,7 @@
 │   ├── XjText          │ bounce mode for indeterminate progress.                │
 │   ├── XjTextInput     │                                                        │
 │   ├── XjTable         │ Keywords: progress, bar, loading, percent              │
-│   ├── XjProgressBar ◄─│─── selected (magenta highlight)                       │
+│   ├── XjProgressBar ◄─│─── selected (magenta highlight)                        │
 │   ├── XjSpinner       │ [ Interactive ] Press Tab to enter the live demo.      │
 │   └── XjTree          │                                                        │
 │ ▸ Styling             ├─ Properties ───────────────────────────────────────────┤
@@ -122,10 +119,10 @@ XjTTY-KitchenSink/
 ├──────────────────────────────────────────────────────────┤
 │  Search Bar (Fixed 3)                                    │
 ├────────────┬─────────────────────────────────────────────┤
-│            │  Preview (auto)                              │
+│            │  Preview (auto)                             │
 │ Component  │─────────────────────────────────────────────│
-│ List (25%) │  Properties (auto)                           │
-│            │                                              │
+│ List (25%) │  Properties (auto)                          │
+│            │                                             │
 ├────────────┴─────────────────────────────────────────────┤
 │  Status Bar (Fixed 1)                                    │
 └──────────────────────────────────────────────────────────┘
