@@ -70,6 +70,9 @@ Inherits ConsoleApplication
 		  Call mDemoBar.SetHeight(XjConstraint.Fixed(0))
 		  Call mDemoSpinnerWidget.SetHeight(XjConstraint.Fixed(0))
 		  Call mDemoKeyText.SetHeight(XjConstraint.Fixed(0))
+		  Call mDemoTextWidget.SetHeight(XjConstraint.Fixed(0))
+		  Call mDemoTableWidget.SetHeight(XjConstraint.Fixed(0))
+		  Call mDemoTreeWidget.SetHeight(XjConstraint.Fixed(0))
 
 		  // [EN] Reveal the relevant demo widget
 		  // [TH] เปิด demo widget ที่เกี่ยวข้อง
@@ -82,6 +85,20 @@ Inherits ConsoleApplication
 		    Call mDemoSpinnerWidget.SetHeight(XjConstraint.Fixed(2))
 		  Case "keyevent"
 		    Call mDemoKeyText.SetHeight(XjConstraint.Fixed(4))
+		  Case "text"
+		    // [EN] Batch 1: XjText alignment/wrap demo
+		    // [TH] Batch 1: demo XjText จัดตำแหน่ง/ตัดคำ
+		    Call mDemoTextWidget.SetHeight(XjConstraint.Fixed(4))
+		  Case "table"
+		    // [EN] Batch 1: XjTable border/header toggle demo
+		    // [TH] Batch 1: demo XjTable สลับ border/header
+		    Call mDemoTableWidget.SetHeight(XjConstraint.Fixed(8))
+		  Case "tree"
+		    // [EN] Batch 1: XjTree scroll navigation demo
+		    // [TH] Batch 1: demo XjTree เลื่อนดู navigation
+		    Call mDemoTreeWidget.SetHeight(XjConstraint.Fixed(6))
+		    mDemoTreeScroll = 0
+		    Call mDemoTreeWidget.SetScrollOffset(0)
 		  End Select
 		End Sub
 	#tag EndMethod
@@ -252,6 +269,82 @@ Inherits ConsoleApplication
 		  Call mDemoKeyText.SetText("Press any key...")
 		  livePreview.AddChild(mDemoKeyText)
 
+		  // --- Batch 1 demo widgets ---
+
+		  // [EN] mDemoTextWidget: XjText alignment/wrap demo — l/c/r change alignment, w toggles wrap
+		  // [TH] mDemoTextWidget: demo XjText จัดตำแหน่ง/ตัดคำ — l/c/r เปลี่ยน alignment, w สลับ wrap
+		  mDemoTextWidget = New XjText
+		  Call mDemoTextWidget.SetHeight(XjConstraint.Fixed(0))
+		  Call mDemoTextWidget.SetWrap(True)
+		  Call mDemoTextWidget.SetText("The quick brown fox jumps over the lazy dog. This sample text demonstrates XjText alignment and word-wrap capabilities.")
+		  livePreview.AddChild(mDemoTextWidget)
+
+		  // [EN] mDemoTableWidget: XjTable demo — b toggles border, h toggles header
+		  // [TH] mDemoTableWidget: demo XjTable — b สลับ border, h สลับ header
+		  mDemoTableWidget = New XjTable
+		  Call mDemoTableWidget.SetHeight(XjConstraint.Fixed(0))
+		  Var tblHeaders() As String
+		  tblHeaders.Add("Component")
+		  tblHeaders.Add("Type")
+		  tblHeaders.Add("Status")
+		  Call mDemoTableWidget.SetHeaders(tblHeaders)
+		  Call mDemoTableWidget.SetColumnWidth(0, 16)
+		  Call mDemoTableWidget.SetColumnWidth(1, 10)
+		  Call mDemoTableWidget.SetColumnWidth(2, 10)
+		  Var tr1() As String
+		  tr1.Add("XjTextInput")
+		  tr1.Add("Widget")
+		  tr1.Add("Active")
+		  mDemoTableWidget.AddRow(tr1)
+		  Var tr2() As String
+		  tr2.Add("XjProgressBar")
+		  tr2.Add("Widget")
+		  tr2.Add("Active")
+		  mDemoTableWidget.AddRow(tr2)
+		  Var tr3() As String
+		  tr3.Add("XjSpinner")
+		  tr3.Add("Widget")
+		  tr3.Add("Active")
+		  mDemoTableWidget.AddRow(tr3)
+		  Var tr4() As String
+		  tr4.Add("XjConfirmPrompt")
+		  tr4.Add("Prompt")
+		  tr4.Add("Planned")
+		  mDemoTableWidget.AddRow(tr4)
+		  Var tr5() As String
+		  tr5.Add("XjSelectPrompt")
+		  tr5.Add("Prompt")
+		  tr5.Add("Planned")
+		  mDemoTableWidget.AddRow(tr5)
+		  livePreview.AddChild(mDemoTableWidget)
+
+		  // [EN] mDemoTreeWidget: XjTree demo — Up/Down scroll a sample project hierarchy
+		  // [TH] mDemoTreeWidget: demo XjTree — Up/Down เลื่อนดู hierarchy โปรเจกต์ตัวอย่าง
+		  mDemoTreeWidget = New XjTree
+		  Call mDemoTreeWidget.SetHeight(XjConstraint.Fixed(0))
+		  Var projNode As New XjTreeNode("MyProject")
+		  Var srcNode As New XjTreeNode("src")
+		  Call srcNode.AddChild(New XjTreeNode("App.xojo_code"))
+		  Call srcNode.AddChild(New XjTreeNode("MainWindow.xojo_window"))
+		  Call srcNode.AddChild(New XjTreeNode("Utils.xojo_code"))
+		  Call projNode.AddChild(srcNode)
+		  Var testNode As New XjTreeNode("tests")
+		  Call testNode.AddChild(New XjTreeNode("TestRunner.xojo_code"))
+		  Call testNode.AddChild(New XjTreeNode("TestUtils.xojo_code"))
+		  Call projNode.AddChild(testNode)
+		  Var docsNode As New XjTreeNode("docs")
+		  Call docsNode.AddChild(New XjTreeNode("README.md"))
+		  Call docsNode.AddChild(New XjTreeNode("CHANGELOG.md"))
+		  Call projNode.AddChild(docsNode)
+		  Var treeRoots() As XjTreeNode
+		  treeRoots.Add(projNode)
+		  Call mDemoTreeWidget.SetData(treeRoots)
+		  mDemoTreeScroll = 0
+		  mDemoTextWrap = True
+		  mDemoTableBorder = True
+		  mDemoTableHeader = True
+		  livePreview.AddChild(mDemoTreeWidget)
+
 		  // [EN] Properties panel: 30% of preview height, min 5 rows
 		  // [TH] Properties panel: 30% ของความสูง preview, ขั้นต่ำ 5 แถว
 		  Var propertiesPanel As New XjBox
@@ -405,6 +498,67 @@ Inherits ConsoleApplication
 		      End If
 		      If key.IsCtrl Then kDesc = kDesc + Chr(10) + "Modifier: Ctrl"
 		      Call mDemoKeyText.SetText(kDesc)
+
+		    Case "text"
+		      // [EN] Batch 1: XjText demo — l/c/r change alignment, w toggles wrap
+		      // [TH] Batch 1: demo XjText — l/c/r เปลี่ยน alignment, w สลับ wrap
+		      If key.Char = "l" Then
+		        Call mDemoTextWidget.SetAlign(XjText.ALIGN_LEFT)
+		        Call mStatusDesc.SetText(" Align: LEFT   l/c/r align  w wrap  Esc back")
+		      ElseIf key.Char = "c" Then
+		        Call mDemoTextWidget.SetAlign(XjText.ALIGN_CENTER)
+		        Call mStatusDesc.SetText(" Align: CENTER   l/c/r align  w wrap  Esc back")
+		      ElseIf key.Char = "r" Then
+		        Call mDemoTextWidget.SetAlign(XjText.ALIGN_RIGHT)
+		        Call mStatusDesc.SetText(" Align: RIGHT   l/c/r align  w wrap  Esc back")
+		      ElseIf key.Char = "w" Then
+		        mDemoTextWrap = Not mDemoTextWrap
+		        Call mDemoTextWidget.SetWrap(mDemoTextWrap)
+		        If mDemoTextWrap Then
+		          Call mStatusDesc.SetText(" Wrap: ON   l/c/r align  w wrap  Esc back")
+		        Else
+		          Call mStatusDesc.SetText(" Wrap: OFF   l/c/r align  w wrap  Esc back")
+		        End If
+		      End If
+
+		    Case "table"
+		      // [EN] Batch 1: XjTable demo — b toggles border, h toggles header
+		      // [TH] Batch 1: demo XjTable — b สลับ border, h สลับ header
+		      If key.Char = "b" Then
+		        mDemoTableBorder = Not mDemoTableBorder
+		        Call mDemoTableWidget.SetShowBorder(mDemoTableBorder)
+		        If mDemoTableBorder Then
+		          Call mStatusDesc.SetText(" Border: ON   b border  h header  Esc back")
+		        Else
+		          Call mStatusDesc.SetText(" Border: OFF   b border  h header  Esc back")
+		        End If
+		      ElseIf key.Char = "h" Then
+		        mDemoTableHeader = Not mDemoTableHeader
+		        Call mDemoTableWidget.SetShowHeader(mDemoTableHeader)
+		        If mDemoTableHeader Then
+		          Call mStatusDesc.SetText(" Header: ON   b border  h header  Esc back")
+		        Else
+		          Call mStatusDesc.SetText(" Header: OFF   b border  h header  Esc back")
+		        End If
+		      End If
+
+		    Case "tree"
+		      // [EN] Batch 1: XjTree demo — Up/Down scroll through sample hierarchy
+		      // [TH] Batch 1: demo XjTree — Up/Down เลื่อนดู hierarchy ตัวอย่าง
+		      If key.KeyCode = XjKeyEvent.KEY_UP Then
+		        If mDemoTreeScroll > 0 Then
+		          mDemoTreeScroll = mDemoTreeScroll - 1
+		          Call mDemoTreeWidget.SetScrollOffset(mDemoTreeScroll)
+		        End If
+		      ElseIf key.KeyCode = XjKeyEvent.KEY_DOWN Then
+		        Var maxScroll As Integer = mDemoTreeWidget.LineCount() - 4
+		        If maxScroll < 0 Then maxScroll = 0
+		        If mDemoTreeScroll < maxScroll Then
+		          mDemoTreeScroll = mDemoTreeScroll + 1
+		          Call mDemoTreeWidget.SetScrollOffset(mDemoTreeScroll)
+		        End If
+		      End If
+
 		    End Select
 		    Return
 		  End If
@@ -574,6 +728,12 @@ Inherits ConsoleApplication
 		    Return "Animates automatically"
 		  Case "keyevent"
 		    Return "Press any key to inspect"
+		  Case "text"
+		    Return "l/c/r align   w wrap"
+		  Case "table"
+		    Return "b border   h header"
+		  Case "tree"
+		    Return "Up/Dn scroll tree"
 		  Case Else
 		    Return ""
 		  End Select
@@ -855,7 +1015,14 @@ Inherits ConsoleApplication
 	// [EN] mDemoInput        — XjTextInput demo; activated by ActivateDemoWidget("textinput")
 	// [EN] mDemoKeyText      — XjText demo for XjKeyEvent; shows last key code/char
 	// [EN] mDemoSpinnerWidget — XjSpinner demo; auto-advances via HandleTick
-	// [EN] mDemoType         — active demo type key ("textinput"|"progressbar"|"spinner"|"keyevent"|"mockup"|"")
+	// [EN] mDemoTableBorder  — current border visibility state for XjTable demo
+	// [EN] mDemoTableHeader  — current header visibility state for XjTable demo
+	// [EN] mDemoTableWidget  — XjTable demo; activated by ActivateDemoWidget("table")
+	// [EN] mDemoTextWidget   — XjText alignment/wrap demo; activated by ActivateDemoWidget("text")
+	// [EN] mDemoTextWrap     — current word-wrap state for XjText demo
+	// [EN] mDemoTreeScroll   — scroll offset for the XjTree demo widget
+	// [EN] mDemoTreeWidget   — XjTree demo; activated by ActivateDemoWidget("tree")
+	// [EN] mDemoType         — active demo type key ("textinput"|"progressbar"|"spinner"|"keyevent"|"text"|"table"|"tree"|"mockup"|"")
 	// [EN] mFlatEntries      — parallel to mFlatNodes; Nil = category row, else entry
 	// [EN] mFlatNodes        — XjTreeNode references in visible tree order
 	// [EN] mListTree         — XjTree widget inside componentList panel
@@ -877,7 +1044,14 @@ Inherits ConsoleApplication
 	// [TH] mDemoInput        — demo XjTextInput; เปิดด้วย ActivateDemoWidget("textinput")
 	// [TH] mDemoKeyText      — demo XjText สำหรับ XjKeyEvent; แสดง key code/char ล่าสุด
 	// [TH] mDemoSpinnerWidget — demo XjSpinner; auto-advance ผ่าน HandleTick
-	// [TH] mDemoType         — demo type ที่ active ("textinput"|"progressbar"|"spinner"|"keyevent"|"mockup"|"")
+	// [TH] mDemoTableBorder  — สถานะ border ปัจจุบันสำหรับ demo XjTable
+	// [TH] mDemoTableHeader  — สถานะ header ปัจจุบันสำหรับ demo XjTable
+	// [TH] mDemoTableWidget  — demo XjTable; เปิดด้วย ActivateDemoWidget("table")
+	// [TH] mDemoTextWidget   — demo XjText จัดตำแหน่ง/ตัดคำ; เปิดด้วย ActivateDemoWidget("text")
+	// [TH] mDemoTextWrap     — สถานะ word-wrap ปัจจุบันสำหรับ demo XjText
+	// [TH] mDemoTreeScroll   — scroll offset สำหรับ demo widget XjTree
+	// [TH] mDemoTreeWidget   — demo XjTree; เปิดด้วย ActivateDemoWidget("tree")
+	// [TH] mDemoType         — demo type ที่ active ("textinput"|"progressbar"|"spinner"|"keyevent"|"text"|"table"|"tree"|"mockup"|"")
 	// [TH] mFlatEntries      — คู่ขนานกับ mFlatNodes; Nil = แถว category, มิฉะนั้น entry
 	// [TH] mFlatNodes        — อ้างอิง XjTreeNode ตามลำดับที่มองเห็นใน tree
 	// [TH] mListTree         — XjTree widget ภายใน panel componentList
@@ -924,6 +1098,34 @@ Inherits ConsoleApplication
 
 	#tag Property, Flags = &h21
 		Private mDemoSpinnerWidget As XjSpinner
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mDemoTableBorder As Boolean
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mDemoTableHeader As Boolean
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mDemoTableWidget As XjTable
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mDemoTextWidget As XjText
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mDemoTextWrap As Boolean
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mDemoTreeScroll As Integer
+	#tag EndProperty
+
+	#tag Property, Flags = &h21
+		Private mDemoTreeWidget As XjTree
 	#tag EndProperty
 
 	#tag Property, Flags = &h21

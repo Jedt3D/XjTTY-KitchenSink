@@ -123,7 +123,7 @@ Protected Module KSComponentRegistry
 		    "XjText", "Widgets", _
 		    "Static/dynamic text label with alignment", _
 		    "XjText renders one or more lines of text with left, center, or right alignment and optional word-wrap. Update live with SetText.", _
-		    "text label align center left right wrap static dynamic", False))
+		    "text label align center left right wrap static dynamic", True))
 		  mEntries.Add(New KSComponentEntry( _
 		    "XjTextInput", "Widgets", _
 		    "Single-line editable text field", _
@@ -148,7 +148,7 @@ Protected Module KSComponentRegistry
 		    "XjTable", "Widgets", _
 		    "Multi-column tabular data grid", _
 		    "XjTable renders rows and columns with optional header row and column width constraints. Useful for property sheets and comparison views.", _
-		    "table grid column row header data tabular", False))
+		    "table grid column row header data tabular", True))
 
 		  // --- Prompts (9) ---
 		  mEntries.Add(New KSComponentEntry( _
